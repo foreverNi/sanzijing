@@ -320,11 +320,6 @@ body::before {
   box-shadow: 0 4px 12px rgba(102, 187, 106, 0.3);
 }
 
-.audio-btn.stop-btn {
-  background: linear-gradient(180deg, #ef5350 0%, #e53935 100%);
-  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
-}
-
 .audio-btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
@@ -342,49 +337,56 @@ body::before {
   animation: pulse-btn 1.2s ease-in-out infinite;
 }
 
+.audio-status {
+  min-height: 24px;
+  text-align: center;
+  color: #e65100;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 /* ========== 底部 ========== */
 .footer {
   text-align: center;
   padding: 20px 0 10px;
 }
 
-.page-dots {
+.page-select-wrap {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
-.page-dot {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #ddd;
-  cursor: pointer;
-  font-weight: 700;
-  color: #888;
-  transition: all 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-}
-
-.page-dot:hover {
-  border-color: #ff9eb5;
+.page-select-label {
   color: #e91e63;
-  transform: translateY(-2px);
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.page-dot.active {
-  background: linear-gradient(135deg, #ff6b6b, #ffa500);
-  color: #fff;
-  border-color: #ffa500;
-  box-shadow: 0 4px 14px rgba(255, 107, 107, 0.4);
-  transform: scale(1.1);
+.page-select {
+  width: min(520px, 100%);
+  min-height: 48px;
+  padding: 0 46px 0 18px;
+  border: 3px solid #ffd1dc;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #fff8fb 100%);
+  color: #5d4037;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(233, 30, 99, 0.12);
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.page-select:hover,
+.page-select:focus {
+  border-color: #ff9eb5;
+  box-shadow: 0 10px 22px rgba(233, 30, 99, 0.16);
+  transform: translateY(-1px);
 }
 
 .hint {
@@ -452,6 +454,15 @@ body::before {
   .page-left {
     border-right: none;
     border-bottom: 2px dashed rgba(0, 0, 0, 0.08);
+  }
+  .page-select-wrap {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .page-select {
+    width: 100%;
+    max-width: 350px;
+    font-size: 0.95rem;
   }
 }
 

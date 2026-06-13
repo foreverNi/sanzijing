@@ -1,8 +1,7 @@
 // 三字经故事网页 - 主逻辑
 let currentPage = 0;
-let speechSynth = window.speechSynthesis || null;
-let currentUtterance = null;
-let isSpeaking = false;
+let currentAudio = null;
+let currentAudioButton = null;
 
 const verseText = document.getElementById("verseText");
 const pinyinText = document.getElementById("pinyinText");
@@ -11,36 +10,33 @@ const moralText = document.getElementById("moralText");
 const pageIndicator = document.getElementById("pageIndicator");
 const sceneWrap = document.getElementById("sceneWrap");
 const book = document.getElementById("book");
-const pageDots = document.getElementById("pageDots");
+const pageSelect = document.getElementById("pageSelect");
 const verseCard = document.getElementById("verseCard");
 const storyCard = document.getElementById("storyCard");
 const moralCard = document.getElementById("moralCard");
+const audioStatus = document.getElementById("audioStatus");
 
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const playVerseBtn = document.getElementById("playVerseBtn");
 const playStoryBtn = document.getElementById("playStoryBtn");
-const stopBtn = document.getElementById("stopBtn");
 
-// 初始化页码导航小圆点
-function renderDots() {
-  pageDots.innerHTML = "";
+// 初始化页面选择下拉框
+function renderPageSelect() {
+  pageSelect.innerHTML = "";
   threeCharClassic.forEach((_, idx) => {
-    const dot = document.createElement("button");
-    dot.className = "page-dot" + (idx === currentPage ? " active" : "");
-    dot.textContent = idx + 1;
-    dot.onclick = () => {
-      currentPage = idx;
-      renderPage();
-    };
-    pageDots.appendChild(dot);
+    const data = threeCharClassic[idx];
+    const option = document.createElement("option");
+    option.value = String(idx);
+    option.textContent = `第 ${idx + 1} 页 · ${data.verse}`;
+    pageSelect.appendChild(option);
   });
 }
 
 // 渲染当前页
 function renderPage() {
   const data = threeCharClassic[currentPage];
-  stopSpeaking();
+  stopAudio();
 
   // 更新背景
   book.style.background = `linear-gradient(135deg, ${data.bgColor}22 0%, #fffef5 40%, ${data.bgColor}22 100%)`;
@@ -64,13 +60,12 @@ function renderPage() {
 
     // 更新页码
     pageIndicator.textContent = `第 ${currentPage + 1} 页 / 共 ${threeCharClassic.length} 页`;
+    pageSelect.value = String(currentPage);
+    audioStatus.textContent = "";
 
     // 更新按钮状态
     prevBtn.disabled = currentPage === 0;
     nextBtn.disabled = currentPage === threeCharClassic.length - 1;
-
-    // 更新小圆点
-    renderDots();
 
     // 渐入动画
     [verseCard, storyCard, moralCard].forEach((el, idx) => {
@@ -98,6 +93,11 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
+pageSelect.addEventListener("change", () => {
+  currentPage = Number(pageSelect.value);
+  renderPage();
+});
+
 // 键盘方向键
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft" && currentPage > 0) {
@@ -109,83 +109,58 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// ========== 语音播报 ==========
-function stopSpeaking() {
-  if (speechSynth && speechSynth.speaking) {
-    speechSynth.cancel();
+// ========== 静态音频播放 ==========
+function stopAudio() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
   }
-  isSpeaking = false;
-  [playVerseBtn, playStoryBtn].forEach((b) => b.classList.remove("playing"));
+  if (currentAudioButton) {
+    currentAudioButton.classList.remove("playing");
+  }
+  currentAudio = null;
+  currentAudioButton = null;
 }
 
-function speakChinese(text, button) {
-  if (!speechSynth) {
-    alert("您的浏览器暂不支持语音朗读功能，请使用 Chrome、Edge 或 Safari 浏览器体验。");
-    return;
-  }
+function pageAudioName() {
+  return String(currentPage + 1).padStart(3, "0");
+}
 
-  stopSpeaking();
+function playAudio(kind, button) {
+  stopAudio();
+  audioStatus.textContent = "";
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "zh-CN";
-  utterance.rate = 0.9; // 稍慢，适合儿童学习
-  utterance.pitch = 1.1; // 稍高，更亲切
-  utterance.volume = 1;
+  const audio = new Audio(`audio/${kind}/${pageAudioName()}.mp3`);
+  currentAudio = audio;
+  currentAudioButton = button;
 
-  // 尝试选择中文声音
-  const voices = speechSynth.getVoices();
-  const chineseVoice = voices.find((v) => v.lang.startsWith("zh"));
-  if (chineseVoice) {
-    utterance.voice = chineseVoice;
-  }
+  audio.addEventListener("play", () => {
+    button.classList.add("playing");
+  });
 
-  utterance.onstart = () => {
-    isSpeaking = true;
-    if (button) button.classList.add("playing");
-  };
+  audio.addEventListener("ended", stopAudio);
 
-  utterance.onend = () => {
-    isSpeaking = false;
-    if (button) button.classList.remove("playing");
-  };
+  audio.addEventListener("error", () => {
+    stopAudio();
+    audioStatus.textContent = "音频还在准备中，请稍后再试。";
+  });
 
-  utterance.onerror = () => {
-    isSpeaking = false;
-    if (button) button.classList.remove("playing");
-  };
-
-  currentUtterance = utterance;
-  speechSynth.speak(utterance);
+  audio.play().catch(() => {
+    stopAudio();
+    audioStatus.textContent = "音频还在准备中，请稍后再试。";
+  });
 }
 
 playVerseBtn.addEventListener("click", () => {
-  const data = threeCharClassic[currentPage];
-  const verse = data.verse.replace(/，/g, "，").replace(/。/g, "。");
-  speakChinese(verse + "。" + data.pinyin, playVerseBtn);
+  playAudio("verse", playVerseBtn);
 });
 
 playStoryBtn.addEventListener("click", () => {
-  const data = threeCharClassic[currentPage];
-  speakChinese(data.story + "。" + data.moral, playStoryBtn);
+  playAudio("story", playStoryBtn);
 });
-
-stopBtn.addEventListener("click", stopSpeaking);
-
-// 预加载语音列表（部分浏览器是异步加载）
-if (speechSynth) {
-  speechSynth.onvoiceschanged = () => {
-    speechSynth.getVoices();
-  };
-  // 触发一次
-  speechSynth.getVoices();
-}
 
 // 初始化第一页
 window.addEventListener("load", () => {
+  renderPageSelect();
   renderPage();
-  // 页面加载后自动播放故事（需用户交互才能播放声音）
-  setTimeout(() => {
-    // 提示用户
-    pageIndicator.innerHTML += " <span style='color:#e91e63;'>👆 点击按钮开始听故事吧</span>";
-  }, 1500);
 });

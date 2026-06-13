@@ -59,11 +59,8 @@
               <span class="icon">🎙️</span>
               <span>讲故事</span>
             </button>
-            <button class="audio-btn stop-btn" id="stopBtn">
-              <span class="icon">⏹️</span>
-              <span>停止</span>
-            </button>
           </div>
+          <div class="audio-status" id="audioStatus" role="status" aria-live="polite"></div>
         </section>
       </div>
 
@@ -75,8 +72,11 @@
 
     <!-- 底部页码导航 -->
     <footer class="footer">
-      <div class="page-dots" id="pageDots"></div>
-      <div class="hint">← → 方向键翻页 · 点击按钮听故事 · 每页会自动播放动画</div>
+      <div class="page-select-wrap">
+        <label class="page-select-label" for="pageSelect">选择故事页</label>
+        <select class="page-select" id="pageSelect" aria-label="选择故事页"></select>
+      </div>
+      <div class="hint">← → 方向键翻页 · 下拉选择故事页 · 点击按钮听朗读</div>
     </footer>
   </div>
 
