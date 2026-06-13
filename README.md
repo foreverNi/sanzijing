@@ -12,6 +12,10 @@
 
 ## 🚀 快速开始
 
+在线访问：
+
+https://foreverNi.github.io/sanzijing/
+
 直接用浏览器打开 `index.html` 即可使用。
 
 或者启动本地服务器：
