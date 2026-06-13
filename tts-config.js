@@ -5,6 +5,9 @@ window.SANZIJING_TTS_CONFIG = {
   endpoint: "",
   timeoutMs: 60000,
   cacheAudio: true,
+  voice: "zh-CN-XiaoxiaoNeural",
+  rate: "-8%",
+  pitch: "+4Hz",
   voicePrompt: "温柔、清晰、亲切的幼儿园女老师，用普通话慢速讲给三岁到六岁儿童听，语气活泼但不夸张。",
   requestFormat: "json",
   outputFormat: "mp3"

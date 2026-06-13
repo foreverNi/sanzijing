@@ -203,13 +203,16 @@ async function requestTtsAudio(kind) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        text: getSpeechText(kind),
-        kind,
-        page: currentPage + 1,
-        verse: data.verse,
-        voicePrompt: ttsConfig.voicePrompt,
-        format: ttsConfig.outputFormat || "mp3"
-      }),
+      text: getSpeechText(kind),
+      kind,
+      page: currentPage + 1,
+      verse: data.verse,
+      voice: ttsConfig.voice || "zh-CN-XiaoxiaoNeural",
+      rate: ttsConfig.rate || "-8%",
+      pitch: ttsConfig.pitch || "+4Hz",
+      voicePrompt: ttsConfig.voicePrompt,
+      format: ttsConfig.outputFormat || "mp3"
+    }),
       signal: controller.signal
     });
 

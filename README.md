@@ -59,7 +59,7 @@ npx serve .
 - **翻页**：点击左右箭头 / 按 ← → 键 / 使用底部下拉框选择故事页
 - **播放语音**：点击"读三字经"或"讲故事"按钮，通过 `tts-config.js` 中配置的 TTS 接口生成音频
 - **数据扩展**：在 `data.js` 中添加新的三字经内容，在 `animations.js` 中定义对应的动画
-- **TTS 配置**：参考 `docs/TTS_API.md`，可接入自托管 CosyVoice / GPT-SoVITS 等开源 TTS 服务
+- **TTS 配置**：参考 `docs/TTS_API.md`，可接入 `server/edge-tts-proxy/` 自托管代理服务
 
 ## 📝 License
 
