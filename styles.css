@@ -1,0 +1,913 @@
+/* ========== 基础样式 ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, "Comic Sans MS", sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #fce4ec 0%, #e1f5fe 50%, #fff3e0 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: #4a4a4a;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ========== 飘动云朵背景 ========== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255, 182, 193, 0.3) 0%, transparent 20%, transparent),
+    radial-gradient(circle at 80% 60%, rgba(173, 216, 230, 0.3) 0%, transparent 20%, transparent),
+    radial-gradient(circle at 30% 80%, rgba(255, 255, 224, 0.3) 0%, transparent 20%, transparent);
+  z-index: -1;
+}
+
+/* ========== 头部 ========== */
+.header {
+  text-align: center;
+  padding: 10px 0 20px;
+}
+
+.title-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 10px;
+}
+
+.book-icon {
+  font-size: 2.5rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.book-icon.flipped {
+  animation-delay: 1s;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(45deg, #ff6b6b, #ffa500, #ffd700, #32cd32, #1e90ff, #9370db);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: rainbow 6s ease-in-out infinite;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.progress {
+  font-size: 1.1rem;
+  color: #666;
+  font-weight: 600;
+}
+
+/* ========== 书本容器 ========== */
+.book-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 600px;
+}
+
+/* ========== 翻页按钮 ========== */
+.nav-btn {
+  background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+  border: 3px solid #ddd;
+  border-radius: 50%;
+  width: 90px;
+  height: 90px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #555;
+  flex-shrink: 0;
+}
+
+.nav-btn:hover:not(:disabled) {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.nav-btn:active:not(:disabled) {
+  background: linear-gradient(180deg, #ffe4e1 0%, #ffd1dc 100%);
+  border-color: #ff9eb5;
+  color: #e91e63;
+}
+
+.btn-arrow {
+  font-size: 1.8rem;
+}
+
+.btn-label {
+  font-size: 0.8rem;
+}
+
+.nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ========== 书本 ========== */
+.book {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #fffef5;
+  border-radius: 24px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  overflow: hidden;
+  min-height: 620px;
+  position: relative;
+  border: 6px solid transparent;
+  transition: background 0.6s ease;
+}
+
+/* ========== 左右页 ========== */
+.page {
+  padding: 40px 30px;
+  position: relative;
+  min-height: 100%;
+}
+
+.page-left {
+  border-right: 2px dashed rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-right {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ========== 动画场景 ========== */
+.scene-wrap {
+  width: 100%;
+  height: 480px;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.8s ease, box-shadow 0.8s ease;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 0 4px 20px rgba(255, 255, 255, 0.48),
+    0 10px 24px rgba(255, 183, 77, 0.12);
+}
+
+.scene-label {
+  margin-top: 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e91e63;
+  letter-spacing: 2px;
+}
+
+/* ========== 经文卡片 ========== */
+.verse-card {
+  background: linear-gradient(135deg, #fff 0%, #fffaf0 100%);
+  border-radius: 20px;
+  padding: 30px 25px;
+  text-align: center;
+  border: 3px solid #ffe4b5;
+  box-shadow: 0 6px 18px rgba(255, 165, 0, 0.15);
+  position: relative;
+}
+
+.verse-text {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+  color: #4a2511;
+  text-shadow: 2px 2px 0 rgba(255, 228, 181);
+}
+
+.pinyin {
+  font-size: 1.1rem;
+  color: #888;
+  letter-spacing: 2px;
+  font-style: italic;
+}
+
+/* ========== 故事卡片 ========== */
+.story-card {
+  flex: 1;
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f5e9 100%);
+  border-radius: 20px;
+  padding: 25px;
+  border: 3px solid #b5e8c9;
+  box-shadow: 0 6px 18px rgba(76, 175, 80, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.story-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #2e7d32;
+  letter-spacing: 1px;
+}
+
+.story-text {
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: #3e5f3e;
+  text-align: justify;
+}
+
+.moral-card {
+  background: linear-gradient(135deg, #fff8dc 0%, #ffecb3 100%);
+  border-radius: 14px;
+  padding: 14px 18px;
+  border: 2px solid #ffd54f;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.moral-label {
+  font-weight: 800;
+  color: #ff6f00;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.moral-text {
+  color: #5d4037;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* ========== 语音按钮 ========== */
+.audio-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.audio-btn {
+  background: linear-gradient(180deg, #ff8a65 0%, #ff7043 100%);
+  color: #fff;
+  border: none;
+  padding: 14px 22px;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 112, 67, 0.3);
+  flex: 1;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.audio-btn:nth-child(1) {
+  background: linear-gradient(180deg, #64b5f6 0%, #42a5f5 100%);
+  box-shadow: 0 4px 12px rgba(66, 165, 245, 0.3);
+}
+
+.audio-btn:nth-child(2) {
+  background: linear-gradient(180deg, #81c784 0%, #66bb6a 100%);
+  box-shadow: 0 4px 12px rgba(102, 187, 106, 0.3);
+}
+
+.audio-btn.stop-btn {
+  background: linear-gradient(180deg, #ef5350 0%, #e53935 100%);
+  box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+}
+
+.audio-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.audio-btn:active {
+  transform: translateY(1px);
+}
+
+.audio-btn .icon {
+  font-size: 1.3rem;
+}
+
+.audio-btn.playing {
+  animation: pulse-btn 1.2s ease-in-out infinite;
+}
+
+/* ========== 底部 ========== */
+.footer {
+  text-align: center;
+  padding: 20px 0 10px;
+}
+
+.page-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.page-dot {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #ddd;
+  cursor: pointer;
+  font-weight: 700;
+  color: #888;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.page-dot:hover {
+  border-color: #ff9eb5;
+  color: #e91e63;
+  transform: translateY(-2px);
+}
+
+.page-dot.active {
+  background: linear-gradient(135deg, #ff6b6b, #ffa500);
+  color: #fff;
+  border-color: #ffa500;
+  box-shadow: 0 4px 14px rgba(255, 107, 107, 0.4);
+  transform: scale(1.1);
+}
+
+.hint {
+  font-size: 0.95rem;
+  color: #888;
+  letter-spacing: 1px;
+}
+
+/* ========== 动画关键帧 ========== */
+@keyframes rainbow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+@keyframes pulse-btn {
+  0%, 100% { box-shadow: 0 4px 12px rgba(255, 112, 67, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(255, 112, 67, 0.6), 0 0 0 8px rgba(255, 112, 67, 0.2); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pageFlip {
+  0% {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-90deg);
+    transform-origin: left center;
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg);
+    transform-origin: left center;
+  }
+}
+
+/* ========== 响应式 ========== */
+@media (max-width: 900px) {
+  .book {
+    grid-template-columns: 1fr;
+  }
+  .book-container {
+    flex-direction: column;
+  }
+  .nav-btn {
+    width: 70px;
+    height: 70px;
+  }
+  .title {
+    font-size: 1.8rem;
+  }
+  .verse-text {
+    font-size: 2rem;
+  }
+  .scene-wrap {
+    height: 350px;
+  }
+  .page-left {
+    border-right: none;
+    border-bottom: 2px dashed rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ========== 故事场景中通用 ========== */
+.scene-element {
+  position: absolute;
+}
+
+/* 人之初 婴儿与种子动画 */
+.scene-baby-seed {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scene-baby-seed .sun {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  font-size: 4rem;
+  animation: rotate-sun 4s linear infinite;
+}
+
+@keyframes rotate-sun {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.scene-baby-seed .baby {
+  font-size: 7rem;
+  animation: baby-bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+}
+
+@keyframes baby-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.scene-baby-seed .heart {
+  position: absolute;
+  bottom: 60px;
+  left: 80px;
+  font-size: 3rem;
+  animation: heart-beat 1.5s ease-in-out infinite;
+}
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+.scene-baby-seed .seed {
+  position: absolute;
+  bottom: 40px;
+  right: 80px;
+  font-size: 3.5rem;
+  animation: seed-grow 3s ease-in-out infinite;
+}
+
+@keyframes seed-grow {
+  0% { transform: translateY(20px) scale(0.8); }
+  50% { transform: translateY(-10px) scale(1.1); }
+  100% { transform: translateY(20px) scale(0.8); }
+}
+
+/* 性相近 两棵树 */
+.scene-two-trees {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 40px 20px;
+  position: relative;
+}
+
+.scene-two-trees .tree-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.scene-two-trees .tree {
+  font-size: 8rem;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+}
+
+.scene-two-trees .tree1 {
+  animation: sway-lr 4s ease-in-out infinite;
+}
+
+.scene-two-trees .tree2 {
+  animation: sway-rl 5s ease-in-out infinite;
+  filter: grayscale(0.5) brightness(0.8);
+  font-size: 5rem;
+}
+
+@keyframes sway-lr {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes sway-rl {
+  0%, 100% { transform: rotate(3deg); }
+  50% { transform: rotate(-3deg); }
+}
+
+.scene-two-trees .label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
+.scene-two-trees .label-good {
+  background: rgba(76, 175, 80, 0.2);
+  color: #2e7d32;
+}
+
+.scene-two-trees .label-bad {
+  background: rgba(244, 67, 54, 0.2);
+  color: #c62828;
+}
+
+.scene-two-trees .sun {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 3.5rem;
+  animation: rotate-sun 5s linear infinite;
+}
+
+.scene-two-trees .cloud {
+  position: absolute;
+  top: 40px;
+  left: 30px;
+  font-size: 3.5rem;
+  animation: cloud-float 4s ease-in-out infinite;
+}
+
+@keyframes cloud-float {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(30px); }
+}
+
+/* 苟不教 布的动画 */
+.scene-cloth-clean {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  gap: 40px;
+}
+
+.cloth-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.cloth-emoji {
+  font-size: 7rem;
+  animation: cloth-wave 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1));
+}
+
+@keyframes cloth-wave {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+.cloth-dirty {
+  filter: grayscale(0.8) brightness(0.7);
+}
+
+.clean-arrow {
+  font-size: 3rem;
+  animation: arrow-move 2s ease-in-out infinite;
+}
+
+@keyframes arrow-move {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(15px); }
+}
+
+/* 教之道 放大镜 */
+.scene-magnifier {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.scene-magnifier .book-paper {
+  font-size: 7rem;
+  animation: book-open 3s ease-in-out infinite;
+}
+
+@keyframes book-open {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.scene-magnifier .magnifier {
+  position: absolute;
+  font-size: 6rem;
+  animation: magnify-move 4s ease-in-out infinite;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+}
+
+@keyframes magnify-move {
+  0% { transform: translate(-80px, 40px); }
+  25% { transform: translate(80px, 40px); }
+  50% { transform: translate(80px, -40px); }
+  75% { transform: translate(-80px, -40px); }
+  100% { transform: translate(-80px, 40px); }
+}
+
+.scene-magnifier .sparkles {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  font-size: 3rem;
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 昔孟母 搬家 */
+.scene-mother-move {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.scene-mother-move .mother {
+  font-size: 6rem;
+  animation: move-house 5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+}
+
+@keyframes move-house {
+  0% { transform: translateX(-100px); }
+  33% { transform: translateX(-30px); }
+  66% { transform: translateX(40px); }
+  100% { transform: translateX(100px); }
+}
+
+.scene-mother-move .houses {
+  position: absolute;
+  bottom: 60px;
+  font-size: 5rem;
+  animation: house-fade 5s ease-in-out infinite;
+}
+
+@keyframes house-fade {
+  0%, 32% { content: "🏚️";
+  33%, 65% { content: "🏠"; opacity: 0.7; }
+  66%, 100% { content: "🏫"; }
+}
+
+.scene-mother-move .houses::before {
+  content: "🏚️";
+  position: absolute;
+  left: 20px;
+  font-size: 4rem;
+  animation: house1 5s ease-in-out infinite;
+}
+
+@keyframes house1 {
+  0%, 33% { opacity: 1; }
+  34%, 100% { opacity: 0; }
+}
+
+.scene-mother-move .child {
+  position: absolute;
+  bottom: 120px;
+  font-size: 3.5rem;
+  animation: child-follow 5s ease-in-out infinite;
+}
+
+@keyframes child-follow {
+  0% { transform: translateX(-120px); }
+  33% { transform: translateX(-50px); }
+  66% { transform: translateX(20px); }
+  100% { transform: translateX(80px); }
+}
+
+/* 子不学 断机杼 */
+.scene-loom-cut {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.scene-loom-cut .loom {
+  font-size: 7rem;
+  animation: loom-weave 2s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+}
+
+@keyframes loom-weave {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.scene-loom-cut .thread {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #8B4513, transparent);
+  transform-origin: center;
+  animation: thread-cut 3s ease-in-out infinite;
+}
+
+@keyframes thread-cut {
+  0%, 40% { transform: translate(-50%, -50%) scaleX(1); opacity: 1; }
+  50%, 100% { transform: translate(-50%, -50%) scaleX(0); opacity: 0; }
+}
+
+.scene-loom-cut .scissors {
+  position: absolute;
+  font-size: 4rem;
+  animation: scissor-snip 3s ease-in-out infinite;
+}
+
+@keyframes scissor-snip {
+  0%, 40% { transform: translate(80px, -60px) rotate(-30deg; }
+  50% { transform: translate(0, 0) rotate(0deg); }
+  60%, 100% { transform: translate(0, 0) rotate(30deg); }
+}
+
+/* 窦燕山 有义方 */
+.scene-teacher-parent {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.scene-teacher-parent .father {
+  font-size: 7rem;
+  animation: teacher-teach 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+}
+
+@keyframes teacher-teach {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.scene-teacher-parent .book-stack {
+  font-size: 4rem;
+  animation: book-rise 3s ease-in-out infinite;
+}
+
+@keyframes book-rise {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.scene-teacher-parent .stars {
+  position: absolute;
+  top: 30px;
+  font-size: 2.5rem;
+  animation: star-spin 4s linear infinite;
+}
+
+@keyframes star-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 教五子 五子登科 */
+.scene-five-children {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 20px;
+}
+
+.scene-five-children .children-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.scene-five-children .child {
+  font-size: 4.5rem;
+  animation: child-jump 2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.12));
+}
+
+.scene-five-children .child:nth-child(1) { animation-delay: 0s; }
+.scene-five-children .child:nth-child(2) { animation-delay: 0.2s; }
+.scene-five-children .child:nth-child(3) { animation-delay: 0.4s; }
+.scene-five-children .child:nth-child(4) { animation-delay: 0.6s; }
+.scene-five-children .child:nth-child(5) { animation-delay: 0.8s; }
+
+@keyframes child-jump {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-25px); }
+}
+
+.scene-five-children .trophy {
+  font-size: 4rem;
+  margin-top: 20px;
+  animation: trophy-glow 2s ease-in-out infinite;
+}
+
+@keyframes trophy-glow {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px gold); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 40px gold); }
+}
+
+.scene-five-children .ribbon {
+  position: absolute;
+  top: 20px;
+  font-size: 3rem;
+  animation: ribbon-wave 3s ease-in-out infinite;
+}
+
+@keyframes ribbon-wave {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>三字经故事乐园</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部标题 -->
+    <header class="header">
+      <div class="title-wrap">
+        <div class="book-icon">📖</div>
+        <h1 class="title">三字经故事乐园</h1>
+        <div class="book-icon flipped">📖</div>
+      </div>
+      <div class="progress">
+        <span id="pageIndicator">正在加载故事页...</span>
+      </div>
+    </header>
+
+    <!-- 书本区域 -->
+    <main class="book-container">
+      <button class="nav-btn prev-btn" id="prevBtn" aria-label="上一页">
+        <span class="btn-arrow">◀</span>
+        <span class="btn-label">上一页</span>
+      </button>
+
+      <div class="book" id="book">
+        <!-- 左页：动画场景 -->
+        <section class="page page-left">
+          <div class="scene-wrap" id="sceneWrap"></div>
+          <div class="scene-label">✨ 精彩故事动画 ✨</div>
+        </section>
+
+        <!-- 右页：文字内容 -->
+        <section class="page page-right">
+          <div class="verse-card" id="verseCard">
+            <div class="verse-text" id="verseText"></div>
+            <div class="pinyin" id="pinyinText"></div>
+          </div>
+
+          <div class="story-card" id="storyCard">
+            <div class="story-title">🎈 故事解说</div>
+            <p class="story-text" id="storyText"></p>
+            <div class="moral-card" id="moralCard">
+              <span class="moral-label">🌟 小小启示</span>
+              <span class="moral-text" id="moralText"></span>
+            </div>
+          </div>
+
+          <div class="audio-controls">
+            <button class="audio-btn" id="playVerseBtn">
+              <span class="icon">🔊</span>
+              <span>读三字经</span>
+            </button>
+            <button class="audio-btn" id="playStoryBtn">
+              <span class="icon">🎙️</span>
+              <span>讲故事</span>
+            </button>
+            <button class="audio-btn stop-btn" id="stopBtn">
+              <span class="icon">⏹️</span>
+              <span>停止</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <button class="nav-btn next-btn" id="nextBtn" aria-label="下一页">
+        <span class="btn-arrow">▶</span>
+        <span class="btn-label">下一页</span>
+      </button>
+    </main>
+
+    <!-- 底部页码导航 -->
+    <footer class="footer">
+      <div class="page-dots" id="pageDots"></div>
+      <div class="hint">← → 方向键翻页 · 点击按钮听故事 · 每页会自动播放动画</div>
+    </footer>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="animations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
