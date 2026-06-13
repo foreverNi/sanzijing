@@ -3,6 +3,8 @@ let currentPage = 0;
 let currentAudio = null;
 let currentAudioButton = null;
 let currentTtsRequest = null;
+let currentUtterance = null;
+const speechSynth = window.speechSynthesis || null;
 const audioCache = new Map();
 const ttsConfig = window.SANZIJING_TTS_CONFIG || {};
 
@@ -123,6 +125,10 @@ function stopAudio(options = {}) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
   }
+  if (speechSynth && speechSynth.speaking) {
+    speechSynth.cancel();
+  }
+  currentUtterance = null;
   if (currentAudioButton) {
     currentAudioButton.classList.remove("playing");
   }
@@ -160,7 +166,7 @@ async function playAudio(kind, button) {
   stopAudio({ clearStatus: true });
 
   if (!ttsConfig.enabled || !ttsConfig.endpoint) {
-    audioStatus.textContent = "请先配置开源 TTS 接口地址。";
+    playBrowserTts(kind, button, "正在使用浏览器默认朗读。");
     return;
   }
 
@@ -182,7 +188,7 @@ async function playAudio(kind, button) {
     playAudioUrl(audioUrl, button);
   } catch (error) {
     if (error.name !== "AbortError") {
-      audioStatus.textContent = "TTS 接口暂时不可用，请稍后再试。";
+      playBrowserTts(kind, button, "外部 TTS 暂时不可用，已切换为浏览器默认朗读。");
     }
     button.classList.remove("loading");
     [playVerseBtn, playStoryBtn].forEach((item) => {
@@ -202,17 +208,17 @@ async function requestTtsAudio(kind) {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-      text: getSpeechText(kind),
-      kind,
-      page: currentPage + 1,
-      verse: data.verse,
-      voice: ttsConfig.voice || "zh-CN-XiaoxiaoNeural",
-      rate: ttsConfig.rate || "-8%",
-      pitch: ttsConfig.pitch || "+4Hz",
-      voicePrompt: ttsConfig.voicePrompt,
-      format: ttsConfig.outputFormat || "mp3"
-    }),
+    body: JSON.stringify({
+        text: getSpeechText(kind),
+        kind,
+        page: currentPage + 1,
+        verse: data.verse,
+        voice: ttsConfig.voice || "zh-CN-XiaoxiaoNeural",
+        rate: ttsConfig.rate || "-8%",
+        pitch: ttsConfig.pitch || "+4Hz",
+        voicePrompt: ttsConfig.voicePrompt,
+        format: ttsConfig.outputFormat || "mp3"
+      }),
       signal: controller.signal
     });
 
@@ -278,6 +284,56 @@ function playAudioUrl(audioUrl, button) {
     stopAudio();
     audioStatus.textContent = "浏览器阻止了播放，请再次点击按钮。";
   });
+}
+
+function playBrowserTts(kind, button, message) {
+  if (ttsConfig.fallbackToBrowserTTS === false) {
+    audioStatus.textContent = "请先配置开源 TTS 接口地址。";
+    return;
+  }
+  if (!speechSynth || typeof SpeechSynthesisUtterance === "undefined") {
+    audioStatus.textContent = "当前浏览器不支持系统 TTS，请配置外部 TTS 接口。";
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(getSpeechText(kind));
+  utterance.lang = "zh-CN";
+  utterance.rate = 0.86;
+  utterance.pitch = 1.15;
+  utterance.volume = 1;
+
+  const voice = chooseBrowserVoice();
+  if (voice) {
+    utterance.voice = voice;
+  }
+
+  currentUtterance = utterance;
+  currentAudioButton = button;
+  audioStatus.textContent = message;
+
+  utterance.onstart = () => {
+    button.classList.add("playing");
+  };
+  utterance.onend = () => {
+    stopAudio({ clearStatus: true });
+  };
+  utterance.onerror = () => {
+    stopAudio();
+    audioStatus.textContent = "浏览器默认朗读失败，请配置外部 TTS 接口。";
+  };
+
+  speechSynth.speak(utterance);
+}
+
+function chooseBrowserVoice() {
+  const voices = speechSynth.getVoices();
+  const preferredNames = ["Xiaoxiao", "Xiaoyi", "Microsoft Huihui", "Tingting", "Google 普通话", "Google Mandarin"];
+  return (
+    voices.find((voice) => preferredNames.some((name) => voice.name.includes(name))) ||
+    voices.find((voice) => voice.lang === "zh-CN") ||
+    voices.find((voice) => voice.lang && voice.lang.startsWith("zh")) ||
+    null
+  );
 }
 
 playVerseBtn.addEventListener("click", () => {

@@ -16,6 +16,7 @@ server/edge-tts-proxy/
 window.SANZIJING_TTS_CONFIG = {
   enabled: true,
   endpoint: "https://your-edge-tts-proxy.example.com/api/tts",
+  fallbackToBrowserTTS: true,
   timeoutMs: 60000,
   cacheAudio: true,
   voice: "zh-CN-XiaoxiaoNeural",
@@ -28,6 +29,8 @@ window.SANZIJING_TTS_CONFIG = {
 ```
 
 `zh-CN-XiaoxiaoNeural` 是温柔中文女声，先作为“幼儿园老师声音”的默认版本。
+
+如果 `enabled` 为 `false`、`endpoint` 为空，或外部接口请求失败，页面会默认回退到浏览器/操作系统自带的 Web Speech TTS。这个回退声音质量取决于用户设备和浏览器，通常不如 edge-tts 稳定。
 
 ## 请求格式
 

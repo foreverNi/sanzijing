@@ -3,6 +3,7 @@
 window.SANZIJING_TTS_CONFIG = {
   enabled: false,
   endpoint: "",
+  fallbackToBrowserTTS: true,
   timeoutMs: 60000,
   cacheAudio: true,
   voice: "zh-CN-XiaoxiaoNeural",
