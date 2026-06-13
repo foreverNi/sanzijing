@@ -2,6 +2,9 @@
 let currentPage = 0;
 let currentAudio = null;
 let currentAudioButton = null;
+let currentTtsRequest = null;
+const audioCache = new Map();
+const ttsConfig = window.SANZIJING_TTS_CONFIG || {};
 
 const verseText = document.getElementById("verseText");
 const pinyinText = document.getElementById("pinyinText");
@@ -36,7 +39,7 @@ function renderPageSelect() {
 // 渲染当前页
 function renderPage() {
   const data = threeCharClassic[currentPage];
-  stopAudio();
+  stopAudio({ clearStatus: true });
 
   // 更新背景
   book.style.background = `linear-gradient(135deg, ${data.bgColor}22 0%, #fffef5 40%, ${data.bgColor}22 100%)`;
@@ -109,8 +112,13 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// ========== 静态音频播放 ==========
-function stopAudio() {
+// ========== TTS 接口播放 ==========
+function stopAudio(options = {}) {
+  const { clearStatus = false } = options;
+  if (currentTtsRequest) {
+    currentTtsRequest.abort();
+    currentTtsRequest = null;
+  }
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
@@ -118,36 +126,154 @@ function stopAudio() {
   if (currentAudioButton) {
     currentAudioButton.classList.remove("playing");
   }
+  [playVerseBtn, playStoryBtn].forEach((button) => {
+    button.disabled = false;
+    button.classList.remove("loading");
+  });
+  if (clearStatus) {
+    audioStatus.textContent = "";
+  }
   currentAudio = null;
   currentAudioButton = null;
 }
 
-function pageAudioName() {
-  return String(currentPage + 1).padStart(3, "0");
+function joinSpeechText(...parts) {
+  return parts
+    .map((part) => String(part).trim().replace(/[。！？；，、]+$/u, ""))
+    .filter(Boolean)
+    .join("。");
 }
 
-function playAudio(kind, button) {
-  stopAudio();
-  audioStatus.textContent = "";
+function getSpeechText(kind) {
+  const data = threeCharClassic[currentPage];
+  if (kind === "verse") {
+    return joinSpeechText(data.verse, data.pinyin);
+  }
+  return joinSpeechText(data.story, data.moral);
+}
 
-  const audio = new Audio(`audio/${kind}/${pageAudioName()}.mp3`);
+function audioCacheKey(kind) {
+  return `${kind}-${currentPage}`;
+}
+
+async function playAudio(kind, button) {
+  stopAudio({ clearStatus: true });
+
+  if (!ttsConfig.enabled || !ttsConfig.endpoint) {
+    audioStatus.textContent = "请先配置开源 TTS 接口地址。";
+    return;
+  }
+
+  button.classList.add("loading");
+  [playVerseBtn, playStoryBtn].forEach((item) => {
+    item.disabled = true;
+  });
+  audioStatus.textContent = "正在生成老师朗读音频...";
+
+  const cacheKey = audioCacheKey(kind);
+  try {
+    let audioUrl = ttsConfig.cacheAudio ? audioCache.get(cacheKey) : null;
+    if (!audioUrl) {
+      audioUrl = await requestTtsAudio(kind);
+      if (ttsConfig.cacheAudio) {
+        audioCache.set(cacheKey, audioUrl);
+      }
+    }
+    playAudioUrl(audioUrl, button);
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      audioStatus.textContent = "TTS 接口暂时不可用，请稍后再试。";
+    }
+    button.classList.remove("loading");
+    [playVerseBtn, playStoryBtn].forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+async function requestTtsAudio(kind) {
+  const controller = new AbortController();
+  currentTtsRequest = controller;
+  const timeout = setTimeout(() => controller.abort(), ttsConfig.timeoutMs || 60000);
+  const data = threeCharClassic[currentPage];
+  try {
+    const response = await fetch(ttsConfig.endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: getSpeechText(kind),
+        kind,
+        page: currentPage + 1,
+        verse: data.verse,
+        voicePrompt: ttsConfig.voicePrompt,
+        format: ttsConfig.outputFormat || "mp3"
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS request failed: ${response.status}`);
+    }
+
+    return responseToAudioUrl(response);
+  } finally {
+    clearTimeout(timeout);
+    currentTtsRequest = null;
+  }
+}
+
+async function responseToAudioUrl(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.startsWith("audio/") || contentType.includes("octet-stream")) {
+    return URL.createObjectURL(await response.blob());
+  }
+
+  const payload = await response.json();
+  if (payload.audioUrl) {
+    return payload.audioUrl;
+  }
+  if (payload.audioBase64) {
+    const mimeType = payload.mimeType || "audio/mpeg";
+    return URL.createObjectURL(base64ToBlob(payload.audioBase64, mimeType));
+  }
+  throw new Error("Unsupported TTS response");
+}
+
+function base64ToBlob(base64, mimeType) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mimeType });
+}
+
+function playAudioUrl(audioUrl, button) {
+  const audio = new Audio(audioUrl);
   currentAudio = audio;
   currentAudioButton = button;
 
   audio.addEventListener("play", () => {
     button.classList.add("playing");
+    button.classList.remove("loading");
+    [playVerseBtn, playStoryBtn].forEach((item) => {
+      item.disabled = false;
+    });
+    audioStatus.textContent = "";
   });
 
-  audio.addEventListener("ended", stopAudio);
+  audio.addEventListener("ended", () => stopAudio({ clearStatus: true }));
 
   audio.addEventListener("error", () => {
     stopAudio();
-    audioStatus.textContent = "音频还在准备中，请稍后再试。";
+    audioStatus.textContent = "音频播放失败，请稍后再试。";
   });
 
   audio.play().catch(() => {
     stopAudio();
-    audioStatus.textContent = "音频还在准备中，请稍后再试。";
+    audioStatus.textContent = "浏览器阻止了播放，请再次点击按钮。";
   });
 }
 

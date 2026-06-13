@@ -337,6 +337,15 @@ body::before {
   animation: pulse-btn 1.2s ease-in-out infinite;
 }
 
+.audio-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.audio-btn.loading .icon {
+  animation: spin-soft 1.2s linear infinite;
+}
+
 .audio-status {
   min-height: 24px;
   text-align: center;
@@ -410,6 +419,11 @@ body::before {
 @keyframes pulse-btn {
   0%, 100% { box-shadow: 0 4px 12px rgba(255, 112, 67, 0.3); }
   50% { box-shadow: 0 4px 20px rgba(255, 112, 67, 0.6), 0 0 0 8px rgba(255, 112, 67, 0.2); }
+}
+
+@keyframes spin-soft {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {
