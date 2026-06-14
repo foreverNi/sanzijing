@@ -4,6 +4,10 @@ let currentAudio = null;
 let currentAudioButton = null;
 let currentTtsRequest = null;
 let currentUtterance = null;
+let browserTtsQueue = [];
+let browserTtsIndex = 0;
+let browserTtsButton = null;
+let browserTtsSession = 0;
 const speechSynth = window.speechSynthesis || null;
 const audioCache = new Map();
 const ttsConfig = window.SANZIJING_TTS_CONFIG || {};
@@ -117,6 +121,7 @@ document.addEventListener("keydown", (e) => {
 // ========== TTS 接口播放 ==========
 function stopAudio(options = {}) {
   const { clearStatus = false } = options;
+  browserTtsSession++;
   if (currentTtsRequest) {
     currentTtsRequest.abort();
     currentTtsRequest = null;
@@ -129,6 +134,9 @@ function stopAudio(options = {}) {
     speechSynth.cancel();
   }
   currentUtterance = null;
+  browserTtsQueue = [];
+  browserTtsIndex = 0;
+  browserTtsButton = null;
   if (currentAudioButton) {
     currentAudioButton.classList.remove("playing");
   }
@@ -154,6 +162,14 @@ function getSpeechText(kind) {
   const data = threeCharClassic[currentPage];
   if (kind === "verse") {
     return joinSpeechText(data.verse, data.pinyin);
+  }
+  return joinSpeechText(data.story, data.moral);
+}
+
+function getBrowserSpeechText(kind) {
+  const data = threeCharClassic[currentPage];
+  if (kind === "verse") {
+    return data.verse;
   }
   return joinSpeechText(data.story, data.moral);
 }
@@ -296,10 +312,30 @@ function playBrowserTts(kind, button, message) {
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(getSpeechText(kind));
+  browserTtsQueue = splitSpeechText(getBrowserSpeechText(kind));
+  browserTtsIndex = 0;
+  browserTtsButton = button;
+  currentAudioButton = button;
+  audioStatus.textContent = message;
+  button.classList.add("playing");
+
+  const session = ++browserTtsSession;
+  speakNextBrowserChunk(session);
+}
+
+function speakNextBrowserChunk(session) {
+  if (session !== browserTtsSession) {
+    return;
+  }
+  if (!speechSynth || browserTtsIndex >= browserTtsQueue.length) {
+    stopAudio({ clearStatus: true });
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(browserTtsQueue[browserTtsIndex]);
   utterance.lang = "zh-CN";
-  utterance.rate = 0.86;
-  utterance.pitch = 1.15;
+  utterance.rate = 0.82;
+  utterance.pitch = 1.12;
   utterance.volume = 1;
 
   const voice = chooseBrowserVoice();
@@ -308,21 +344,30 @@ function playBrowserTts(kind, button, message) {
   }
 
   currentUtterance = utterance;
-  currentAudioButton = button;
-  audioStatus.textContent = message;
-
-  utterance.onstart = () => {
-    button.classList.add("playing");
-  };
   utterance.onend = () => {
-    stopAudio({ clearStatus: true });
+    if (session !== browserTtsSession) {
+      return;
+    }
+    browserTtsIndex++;
+    speakNextBrowserChunk(session);
   };
   utterance.onerror = () => {
+    if (session !== browserTtsSession) {
+      return;
+    }
     stopAudio();
     audioStatus.textContent = "浏览器默认朗读失败，请配置外部 TTS 接口。";
   };
 
   speechSynth.speak(utterance);
+  if (speechSynth.paused) {
+    speechSynth.resume();
+  }
+  setTimeout(() => {
+    if (speechSynth && speechSynth.paused) {
+      speechSynth.resume();
+    }
+  }, 250);
 }
 
 function chooseBrowserVoice() {
@@ -334,6 +379,37 @@ function chooseBrowserVoice() {
     voices.find((voice) => voice.lang && voice.lang.startsWith("zh")) ||
     null
   );
+}
+
+function splitSpeechText(text) {
+  const normalized = String(text).replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const sentences = normalized.match(/[^。！？!?；;]+[。！？!?；;]?/g) || [normalized];
+  const chunks = [];
+  let current = "";
+  sentences.forEach((sentence) => {
+    const next = current ? current + sentence : sentence;
+    if (next.length > 90 && current) {
+      chunks.push(current);
+      current = sentence;
+    } else {
+      current = next;
+    }
+  });
+  if (current) {
+    chunks.push(current);
+  }
+  return chunks;
+}
+
+if (speechSynth) {
+  speechSynth.onvoiceschanged = () => {
+    speechSynth.getVoices();
+  };
+  speechSynth.getVoices();
 }
 
 playVerseBtn.addEventListener("click", () => {
