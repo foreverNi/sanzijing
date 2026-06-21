@@ -42,6 +42,7 @@ public final class MainActivity extends Activity {
     private static final int RECORD_AUDIO_REQUEST_CODE = 41;
     private static final int PAGE_PAUSE_MS = 60_000;
     private static final int UNLOCK_HOLD_MS = 900;
+    private static final int SWIPE_THRESHOLD_DP = 80;
     private static final String PREFS_NAME = "sanzijing_settings";
     private static final String PREF_AUDIO_SOURCE = "audio_source";
     private static final String SOURCE_BUILTIN = "builtin";
@@ -62,6 +63,7 @@ public final class MainActivity extends Activity {
     private boolean locked = false;
     private boolean ttsFallbackAttempted = false;
     private boolean isRecording = false;
+    private boolean manualPagePlayback = false;
     private String selectedAudioSource = SOURCE_BUILTIN;
     private String recordingProfile = SOURCE_MOM;
     private String pendingRecordingKind;
@@ -89,16 +91,15 @@ public final class MainActivity extends Activity {
     private TextView moralText;
     private TextView statusText;
     private TextView lockHint;
-    private Button previousButton;
-    private Button nextButton;
-    private Button verseButton;
-    private Button storyButton;
+    private Button playButton;
     private Button autoButton;
-    private Button audioSourceButton;
-    private Button recordingManagerButton;
+    private Button recordButton;
+    private Button settingsButton;
     private Button ttsSettingsButton;
     private View lockOverlay;
     private TextToSpeech textToSpeech;
+    private float touchStartX;
+    private float touchStartY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -204,9 +205,17 @@ public final class MainActivity extends Activity {
             ScrollView.LayoutParams.WRAP_CONTENT
         ));
 
+        LinearLayout topBar = row();
+        topBar.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = label("三字经故事乐园", 25, TEXT_PRIMARY, Typeface.BOLD);
-        title.setGravity(Gravity.CENTER);
-        content.addView(title, matchWrap());
+        title.setGravity(Gravity.CENTER_VERTICAL);
+        topBar.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+
+        recordButton = topButton("录制");
+        settingsButton = topButton("设置");
+        topBar.addView(recordButton, topButtonLayout());
+        topBar.addView(settingsButton, topButtonLayout());
+        content.addView(topBar, matchWrap());
 
         pageIndicator = label("", 15, TEXT_SECONDARY, Typeface.NORMAL);
         pageIndicator.setGravity(Gravity.CENTER);
@@ -238,26 +247,8 @@ public final class MainActivity extends Activity {
         moralText.setPadding(dp(14), dp(12), dp(14), dp(12));
         content.addView(moralText, panelLayout());
 
-        LinearLayout sourceRow = row();
-        audioSourceButton = actionButton("");
-        recordingManagerButton = actionButton("录制管理");
-        sourceRow.addView(audioSourceButton, weightedButtonLayout());
-        sourceRow.addView(recordingManagerButton, weightedButtonLayout());
-        content.addView(sourceRow, matchWrap());
-
-        LinearLayout audioRow = row();
-        verseButton = actionButton("读三字经");
-        storyButton = actionButton("讲故事");
-        audioRow.addView(verseButton, weightedButtonLayout());
-        audioRow.addView(storyButton, weightedButtonLayout());
-        content.addView(audioRow, matchWrap());
-
-        LinearLayout navRow = row();
-        previousButton = actionButton("上一页");
-        nextButton = actionButton("下一页");
-        navRow.addView(previousButton, weightedButtonLayout());
-        navRow.addView(nextButton, weightedButtonLayout());
-        content.addView(navRow, matchWrap());
+        playButton = actionButton("播放");
+        content.addView(playButton, autoButtonLayout());
 
         autoButton = actionButton("自动播放");
         content.addView(autoButton, autoButtonLayout());
@@ -271,24 +262,16 @@ public final class MainActivity extends Activity {
         statusText.setPadding(0, dp(10), 0, 0);
         content.addView(statusText, matchWrap());
 
-        previousButton.setOnClickListener(v -> {
-            if (currentPageIndex > 0) {
-                stopAutoMode();
-                currentPageIndex--;
-                renderPage();
+        scrollView.setOnTouchListener((v, event) -> handlePageSwipe(event));
+        recordButton.setOnClickListener(v -> {
+            if (isRecording) {
+                stopRecording(true);
+            } else {
+                showQuickRecordingDialog();
             }
         });
-        nextButton.setOnClickListener(v -> {
-            if (currentPageIndex < ContentRepository.PAGES.length - 1) {
-                stopAutoMode();
-                currentPageIndex++;
-                renderPage();
-            }
-        });
-        audioSourceButton.setOnClickListener(v -> showAudioSourceDialog());
-        recordingManagerButton.setOnClickListener(v -> showRecordingDialog());
-        verseButton.setOnClickListener(v -> speakManual("verse"));
-        storyButton.setOnClickListener(v -> speakManual("story"));
+        settingsButton.setOnClickListener(v -> showSettingsDialog());
+        playButton.setOnClickListener(v -> speakManualPage());
         autoButton.setOnClickListener(v -> {
             if (autoMode) {
                 stopAutoMode();
@@ -344,21 +327,61 @@ public final class MainActivity extends Activity {
         storyText.setText(page.story);
         moralText.setText("小小启示：" + page.moral);
         sceneView.setPage(page);
-        previousButton.setEnabled(currentPageIndex > 0 && !locked);
-        nextButton.setEnabled(currentPageIndex < ContentRepository.PAGES.length - 1 && !locked);
-        updateAudioSourceButton();
         updateRecordingControls();
         if (!autoMode) {
             statusText.setText("");
         }
     }
 
-    private void speakManual(String kind) {
+    private boolean handlePageSwipe(MotionEvent event) {
+        if (locked || isRecording) {
+            return false;
+        }
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            touchStartX = event.getX();
+            touchStartY = event.getY();
+            return false;
+        }
+        if (event.getActionMasked() != MotionEvent.ACTION_UP) {
+            return false;
+        }
+        float deltaX = event.getX() - touchStartX;
+        float deltaY = event.getY() - touchStartY;
+        if (Math.abs(deltaX) < dp(SWIPE_THRESHOLD_DP) || Math.abs(deltaX) < Math.abs(deltaY) * 1.5f) {
+            return false;
+        }
+        if (deltaX < 0) {
+            changePageBySwipe(1);
+        } else {
+            changePageBySwipe(-1);
+        }
+        return true;
+    }
+
+    private void changePageBySwipe(int direction) {
+        int nextIndex = currentPageIndex + direction;
+        if (nextIndex < 0 || nextIndex >= ContentRepository.PAGES.length) {
+            return;
+        }
+        manualPagePlayback = false;
         stopAutoMode();
-        speak(kind, "manual-" + kind);
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+        }
+        releaseSpeechPlayer();
+        currentPageIndex = nextIndex;
+        renderPage();
+    }
+
+    private void speakManualPage() {
+        stopAutoMode();
+        manualPagePlayback = true;
+        statusText.setText("正在播放当前页...");
+        speak("verse", "manual-page-verse");
     }
 
     private void startAutoMode() {
+        manualPagePlayback = false;
         autoMode = true;
         autoRound = 0;
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -369,6 +392,7 @@ public final class MainActivity extends Activity {
     }
 
     private void stopAutoMode() {
+        manualPagePlayback = false;
         autoMode = false;
         autoRound = 0;
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -414,7 +438,21 @@ public final class MainActivity extends Activity {
     }
 
     private void handleSpeechDone(String utteranceId) {
-        if (!autoMode || utteranceId == null) {
+        if (utteranceId == null) {
+            return;
+        }
+        if (manualPagePlayback && utteranceId.equals("manual-page-verse")) {
+            statusText.setText("正在播放故事...");
+            speak("story", "manual-page-story");
+            return;
+        }
+        if (manualPagePlayback && utteranceId.equals("manual-page-story")) {
+            manualPagePlayback = false;
+            statusText.setText("");
+            return;
+        }
+        if (!autoMode) {
+            statusText.setText("");
             return;
         }
         if (utteranceId.startsWith("auto-verse-")) {
@@ -478,11 +516,7 @@ public final class MainActivity extends Activity {
             currentSpeechPlayer.setDataSource(audioFile.getAbsolutePath());
             currentSpeechPlayer.setOnCompletionListener(player -> {
                 releaseSpeechPlayer();
-                if (autoMode) {
-                    handleSpeechDone(utteranceId);
-                } else {
-                    statusText.setText("");
-                }
+                handleSpeechDone(utteranceId);
             });
             currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
                 releaseSpeechPlayer();
@@ -519,11 +553,7 @@ public final class MainActivity extends Activity {
             );
             currentSpeechPlayer.setOnCompletionListener(player -> {
                 releaseSpeechPlayer();
-                if (autoMode) {
-                    handleSpeechDone(utteranceId);
-                } else {
-                    statusText.setText("");
-                }
+                handleSpeechDone(utteranceId);
             });
             currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
                 releaseSpeechPlayer();
@@ -671,11 +701,7 @@ public final class MainActivity extends Activity {
             currentSpeechPlayer.setDataSource(pendingSpeechFile.getAbsolutePath());
             currentSpeechPlayer.setOnCompletionListener(player -> {
                 releaseSpeechPlayer();
-                if (autoMode) {
-                    handleSpeechDone(utteranceId);
-                } else {
-                    statusText.setText("");
-                }
+                handleSpeechDone(utteranceId);
             });
             currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
                 releaseSpeechPlayer();
@@ -767,6 +793,30 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void showSettingsDialog() {
+        if (isRecording || locked) {
+            return;
+        }
+        String[] items = {
+            "播放音源：" + audioSourceLabel(selectedAudioSource),
+            "录音管理",
+            "系统语音设置"
+        };
+        new AlertDialog.Builder(this)
+            .setTitle("设置")
+            .setItems(items, (dialog, which) -> {
+                if (which == 0) {
+                    showAudioSourceDialog();
+                } else if (which == 1) {
+                    showRecordingDialog();
+                } else {
+                    openTtsSettings();
+                }
+            })
+            .setNegativeButton("关闭", null)
+            .show();
+    }
+
     private void showAudioSourceDialog() {
         String[] labels = {"APP自带音频", "妈妈录制", "爸爸录制", "自定义录制"};
         String[] values = {SOURCE_BUILTIN, SOURCE_MOM, SOURCE_DAD, SOURCE_CUSTOM};
@@ -787,6 +837,85 @@ public final class MainActivity extends Activity {
             })
             .setNegativeButton("取消", null)
             .show();
+    }
+
+    private void showQuickRecordingDialog() {
+        if (isRecording || locked) {
+            return;
+        }
+        stopAutoMode();
+        final String[] profiles = {SOURCE_MOM, SOURCE_DAD, SOURCE_CUSTOM};
+        final String[] kinds = {"verse", "story"};
+        final int[] selectedProfile = {0};
+        final int[] selectedKind = {0};
+
+        LinearLayout dialogContent = new LinearLayout(this);
+        dialogContent.setOrientation(LinearLayout.VERTICAL);
+        dialogContent.setPadding(dp(8), dp(4), dp(8), 0);
+
+        TextView pageLabel = label("第 " + (currentPageIndex + 1) + " 页 / 共 "
+            + ContentRepository.PAGES.length + " 页", 16, TEXT_PRIMARY, Typeface.BOLD);
+        pageLabel.setGravity(Gravity.CENTER);
+        dialogContent.addView(pageLabel, matchWrap());
+
+        Button profileButton = actionButton("角色：妈妈录制");
+        Button kindButton = actionButton("内容：读三字经");
+        dialogContent.addView(profileButton, dialogButtonLayout());
+        dialogContent.addView(kindButton, dialogButtonLayout());
+
+        profileButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setTitle("选择录音角色")
+            .setSingleChoiceItems(new String[]{"妈妈录制", "爸爸录制", "自定义录制"},
+                selectedProfile[0], (dialog, which) -> {
+                    selectedProfile[0] = which;
+                    profileButton.setText("角色：" + audioSourceLabel(profiles[which]));
+                    dialog.dismiss();
+                })
+            .setNegativeButton("取消", null)
+            .show());
+
+        kindButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setTitle("选择录制内容")
+            .setSingleChoiceItems(new String[]{"读三字经", "讲故事"}, selectedKind[0],
+                (dialog, which) -> {
+                    selectedKind[0] = which;
+                    kindButton.setText("内容：" + kindLabel(kinds[which]));
+                    dialog.dismiss();
+                })
+            .setNegativeButton("取消", null)
+            .show());
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setTitle("开始录制")
+            .setView(dialogContent)
+            .setPositiveButton("开始", null)
+            .setNegativeButton("取消", null)
+            .create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String profile = profiles[selectedProfile[0]];
+            String kind = kinds[selectedKind[0]];
+            beginQuickRecording(profile, kind, dialog);
+        }));
+        dialog.show();
+    }
+
+    private void beginQuickRecording(String profile, String kind, AlertDialog dialog) {
+        File file = userAudioFile(profile, kind, currentPageIndex + 1);
+        if (file.exists()) {
+            new AlertDialog.Builder(this)
+                .setTitle("覆盖录音")
+                .setMessage("当前页的" + audioSourceLabel(profile) + "「" + kindLabel(kind)
+                    + "」已有录音，是否覆盖？")
+                .setPositiveButton("覆盖", (confirmDialog, which) -> {
+                    dialog.dismiss();
+                    startRecording(profile, kind);
+                })
+                .setNegativeButton("取消", null)
+                .show();
+            return;
+        }
+        dialog.dismiss();
+        startRecording(profile, kind);
     }
 
     private void showRecordingDialog() {
@@ -910,6 +1039,7 @@ public final class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, RECORD_AUDIO_REQUEST_CODE);
             return;
         }
+        manualPagePlayback = false;
         stopAutoMode();
         releaseSpeechPlayer();
         pendingRecordingProfile = profile;
@@ -1037,22 +1167,26 @@ public final class MainActivity extends Activity {
     }
 
     private void updateAudioSourceButton() {
-        if (audioSourceButton != null) {
-            audioSourceButton.setText("音源：" + audioSourceLabel(selectedAudioSource));
+        if (statusText != null) {
+            statusText.setText("当前音源：" + audioSourceLabel(selectedAudioSource));
         }
     }
 
     private void updateRecordingControls() {
         if (autoButton != null) {
-            autoButton.setEnabled(!isRecording);
+            autoButton.setEnabled(!isRecording && !locked);
         }
-        if (verseButton != null) {
-            verseButton.setEnabled(!locked && !isRecording);
-            storyButton.setEnabled(!locked && !isRecording);
-            audioSourceButton.setEnabled(!locked && !isRecording);
-            recordingManagerButton.setEnabled(!locked && !isRecording);
-            previousButton.setEnabled(!locked && !isRecording && currentPageIndex > 0);
-            nextButton.setEnabled(!locked && !isRecording && currentPageIndex < ContentRepository.PAGES.length - 1);
+        if (playButton != null) {
+            playButton.setEnabled(!locked && !isRecording);
+        }
+        if (settingsButton != null) {
+            settingsButton.setEnabled(!locked && !isRecording);
+        }
+        if (recordButton != null) {
+            recordButton.setEnabled(!locked || isRecording);
+            recordButton.setText(isRecording ? "停止" : "录制");
+            recordButton.setBackground(rounded(isRecording ? Color.rgb(178, 73, 68) : ACTION_GREEN,
+                isRecording ? Color.rgb(178, 73, 68) : ACTION_GREEN));
         }
     }
 
@@ -1179,6 +1313,13 @@ public final class MainActivity extends Activity {
         return button;
     }
 
+    private Button topButton(String text) {
+        Button button = actionButton(text);
+        button.setTextSize(14);
+        button.setPadding(dp(6), 0, dp(6), 0);
+        return button;
+    }
+
     private LinearLayout row() {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1196,6 +1337,18 @@ public final class MainActivity extends Activity {
     private LinearLayout.LayoutParams weightedButtonLayout() {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(56), 1);
         params.setMargins(dp(5), dp(6), dp(5), dp(6));
+        return params;
+    }
+
+    private LinearLayout.LayoutParams topButtonLayout() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(64), dp(42));
+        params.setMargins(dp(6), 0, 0, 0);
+        return params;
+    }
+
+    private LinearLayout.LayoutParams dialogButtonLayout() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(52));
+        params.setMargins(0, dp(8), 0, 0);
         return params;
     }
 
