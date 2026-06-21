@@ -1,8 +1,12 @@
 package com.foreverni.sanzijing;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -10,6 +14,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -34,8 +39,15 @@ import java.util.List;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
+    private static final int RECORD_AUDIO_REQUEST_CODE = 41;
     private static final int PAGE_PAUSE_MS = 60_000;
     private static final int UNLOCK_HOLD_MS = 900;
+    private static final String PREFS_NAME = "sanzijing_settings";
+    private static final String PREF_AUDIO_SOURCE = "audio_source";
+    private static final String SOURCE_BUILTIN = "builtin";
+    private static final String SOURCE_MOM = "mom";
+    private static final String SOURCE_DAD = "dad";
+    private static final String SOURCE_CUSTOM = "custom";
     private static final int EYE_BACKGROUND = Color.rgb(247, 250, 242);
     private static final int PANEL_BACKGROUND = Color.rgb(255, 253, 246);
     private static final int TEXT_PRIMARY = Color.rgb(48, 66, 54);
@@ -49,16 +61,26 @@ public final class MainActivity extends Activity {
     private boolean ttsReady = false;
     private boolean locked = false;
     private boolean ttsFallbackAttempted = false;
+    private boolean isRecording = false;
+    private String selectedAudioSource = SOURCE_BUILTIN;
+    private String recordingProfile = SOURCE_MOM;
+    private String pendingRecordingKind;
+    private String pendingRecordingProfile;
     private String activeSpeechText = "";
     private String activeSpeechBaseId = "";
     private File pendingSpeechFile;
+    private File currentRecordingFile;
     private MediaPlayer currentSpeechPlayer;
+    private MediaRecorder mediaRecorder;
+    private AlertDialog recordingDialog;
     private Runnable pendingAutoRunnable;
     private Runnable pendingUnlockRunnable;
     private Runnable pendingSpeechTimeoutRunnable;
+    private SharedPreferences preferences;
 
     private FrameLayout root;
     private LinearLayout content;
+    private LinearLayout recordingDialogContent;
     private TextView pageIndicator;
     private TextView verseText;
     private TextView pinyinText;
@@ -72,6 +94,8 @@ public final class MainActivity extends Activity {
     private Button verseButton;
     private Button storyButton;
     private Button autoButton;
+    private Button audioSourceButton;
+    private Button recordingManagerButton;
     private Button ttsSettingsButton;
     private View lockOverlay;
     private TextToSpeech textToSpeech;
@@ -80,6 +104,8 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        selectedAudioSource = normalizeAudioSource(preferences.getString(PREF_AUDIO_SOURCE, SOURCE_BUILTIN));
         buildLayout();
         renderPage();
     }
@@ -87,6 +113,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         stopAutoMode();
+        stopRecording(false);
         if (textToSpeech != null) {
             textToSpeech.stop();
             textToSpeech.shutdown();
@@ -211,6 +238,13 @@ public final class MainActivity extends Activity {
         moralText.setPadding(dp(14), dp(12), dp(14), dp(12));
         content.addView(moralText, panelLayout());
 
+        LinearLayout sourceRow = row();
+        audioSourceButton = actionButton("");
+        recordingManagerButton = actionButton("录制管理");
+        sourceRow.addView(audioSourceButton, weightedButtonLayout());
+        sourceRow.addView(recordingManagerButton, weightedButtonLayout());
+        content.addView(sourceRow, matchWrap());
+
         LinearLayout audioRow = row();
         verseButton = actionButton("读三字经");
         storyButton = actionButton("讲故事");
@@ -251,6 +285,8 @@ public final class MainActivity extends Activity {
                 renderPage();
             }
         });
+        audioSourceButton.setOnClickListener(v -> showAudioSourceDialog());
+        recordingManagerButton.setOnClickListener(v -> showRecordingDialog());
         verseButton.setOnClickListener(v -> speakManual("verse"));
         storyButton.setOnClickListener(v -> speakManual("story"));
         autoButton.setOnClickListener(v -> {
@@ -310,6 +346,8 @@ public final class MainActivity extends Activity {
         sceneView.setPage(page);
         previousButton.setEnabled(currentPageIndex > 0 && !locked);
         nextButton.setEnabled(currentPageIndex < ContentRepository.PAGES.length - 1 && !locked);
+        updateAudioSourceButton();
+        updateRecordingControls();
         if (!autoMode) {
             statusText.setText("");
         }
@@ -411,6 +449,10 @@ public final class MainActivity extends Activity {
         activeSpeechText = text;
         activeSpeechBaseId = utteranceId;
         ttsFallbackAttempted = false;
+        if (!SOURCE_BUILTIN.equals(selectedAudioSource)
+            && playUserSpeech(selectedAudioSource, kind, utteranceId)) {
+            return;
+        }
         if (playBundledSpeech(kind, utteranceId)) {
             return;
         }
@@ -418,6 +460,46 @@ public final class MainActivity extends Activity {
             return;
         }
         synthesizeSpeech(text, utteranceId);
+    }
+
+    private boolean playUserSpeech(String profile, String kind, String utteranceId) {
+        File audioFile = userAudioFile(profile, kind, currentPageIndex + 1);
+        if (!audioFile.exists() || audioFile.length() == 0) {
+            return false;
+        }
+        releaseSpeechPlayer();
+        clearSpeechTimeout();
+        currentSpeechPlayer = new MediaPlayer();
+        currentSpeechPlayer.setAudioAttributes(new AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .build());
+        try {
+            currentSpeechPlayer.setDataSource(audioFile.getAbsolutePath());
+            currentSpeechPlayer.setOnCompletionListener(player -> {
+                releaseSpeechPlayer();
+                if (autoMode) {
+                    handleSpeechDone(utteranceId);
+                } else {
+                    statusText.setText("");
+                }
+            });
+            currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
+                releaseSpeechPlayer();
+                if (!playBundledSpeech(kind, utteranceId)) {
+                    statusText.setText("用户录音无法播放，且内置语音缺失：" + what + "/" + extra);
+                    stopAutoMode();
+                }
+                return true;
+            });
+            currentSpeechPlayer.prepare();
+            currentSpeechPlayer.start();
+            statusText.setText("正在播放" + audioSourceLabel(profile) + "...");
+            return true;
+        } catch (IOException error) {
+            releaseSpeechPlayer();
+            return false;
+        }
     }
 
     private boolean playBundledSpeech(String kind, String utteranceId) {
@@ -685,17 +767,330 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void showAudioSourceDialog() {
+        String[] labels = {"APP自带音频", "妈妈录制", "爸爸录制", "自定义录制"};
+        String[] values = {SOURCE_BUILTIN, SOURCE_MOM, SOURCE_DAD, SOURCE_CUSTOM};
+        int checked = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(selectedAudioSource)) {
+                checked = i;
+                break;
+            }
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("播放音源")
+            .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                selectedAudioSource = values[which];
+                preferences.edit().putString(PREF_AUDIO_SOURCE, selectedAudioSource).apply();
+                updateAudioSourceButton();
+                dialog.dismiss();
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void showRecordingDialog() {
+        stopAutoMode();
+        recordingDialogContent = new LinearLayout(this);
+        recordingDialogContent.setOrientation(LinearLayout.VERTICAL);
+        recordingDialogContent.setPadding(dp(8), dp(6), dp(8), 0);
+        recordingDialog = new AlertDialog.Builder(this)
+            .setTitle("录制管理")
+            .setView(recordingDialogContent)
+            .setNegativeButton("关闭", null)
+            .create();
+        recordingDialog.setOnDismissListener(dialog -> {
+            if (isRecording) {
+                stopRecording(false);
+            }
+            recordingDialog = null;
+            recordingDialogContent = null;
+        });
+        recordingDialog.show();
+        refreshRecordingDialog();
+    }
+
+    private void refreshRecordingDialog() {
+        if (recordingDialogContent == null) {
+            return;
+        }
+        recordingDialogContent.removeAllViews();
+
+        TextView pageLabel = label("第 " + (currentPageIndex + 1) + " 页 / 共 "
+            + ContentRepository.PAGES.length + " 页", 16, TEXT_PRIMARY, Typeface.BOLD);
+        pageLabel.setGravity(Gravity.CENTER);
+        recordingDialogContent.addView(pageLabel, matchWrap());
+
+        Button profileButton = actionButton("录音角色：" + audioSourceLabel(recordingProfile));
+        profileButton.setOnClickListener(v -> showRecordingProfileDialog());
+        LinearLayout.LayoutParams profileParams = autoButtonLayout();
+        profileParams.setMargins(0, dp(8), 0, dp(8));
+        recordingDialogContent.addView(profileButton, profileParams);
+
+        addRecordingSection("读三字经", "verse");
+        addRecordingSection("讲故事", "story");
+    }
+
+    private void showRecordingProfileDialog() {
+        String[] labels = {"妈妈录制", "爸爸录制", "自定义录制"};
+        String[] values = {SOURCE_MOM, SOURCE_DAD, SOURCE_CUSTOM};
+        int checked = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(recordingProfile)) {
+                checked = i;
+                break;
+            }
+        }
+        new AlertDialog.Builder(this)
+            .setTitle("选择录音角色")
+            .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                recordingProfile = values[which];
+                refreshRecordingDialog();
+                dialog.dismiss();
+            })
+            .setNegativeButton("取消", null)
+            .show();
+    }
+
+    private void addRecordingSection(String title, String kind) {
+        File file = userAudioFile(recordingProfile, kind, currentPageIndex + 1);
+        TextView titleView = label(title + (file.exists() ? "：已录制" : "：未录制"), 15, TEXT_PRIMARY, Typeface.BOLD);
+        titleView.setPadding(0, dp(8), 0, dp(4));
+        recordingDialogContent.addView(titleView, matchWrap());
+
+        LinearLayout controls = row();
+        Button recordButton = actionButton(isRecording && kind.equals(pendingRecordingKind)
+            && recordingProfile.equals(pendingRecordingProfile) ? "停止" : "录制");
+        Button previewButton = actionButton("试听");
+        Button deleteButton = actionButton("删除");
+        controls.addView(recordButton, weightedButtonLayout());
+        controls.addView(previewButton, weightedButtonLayout());
+        controls.addView(deleteButton, weightedButtonLayout());
+        recordingDialogContent.addView(controls, matchWrap());
+
+        recordButton.setEnabled(!isRecording || (kind.equals(pendingRecordingKind)
+            && recordingProfile.equals(pendingRecordingProfile)));
+        previewButton.setEnabled(!isRecording && file.exists() && file.length() > 0);
+        deleteButton.setEnabled(!isRecording && file.exists());
+
+        recordButton.setOnClickListener(v -> {
+            if (isRecording) {
+                stopRecording(true);
+                return;
+            }
+            if (file.exists()) {
+                new AlertDialog.Builder(this)
+                    .setTitle("覆盖录音")
+                    .setMessage("当前段已有录音，是否重新录制并覆盖？")
+                    .setPositiveButton("覆盖", (dialog, which) -> startRecording(recordingProfile, kind))
+                    .setNegativeButton("取消", null)
+                    .show();
+            } else {
+                startRecording(recordingProfile, kind);
+            }
+        });
+        previewButton.setOnClickListener(v -> playRecordingPreview(file));
+        deleteButton.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setTitle("删除录音")
+            .setMessage("确定删除这段录音？")
+            .setPositiveButton("删除", (dialog, which) -> {
+                if (file.delete()) {
+                    Toast.makeText(this, "录音已删除", Toast.LENGTH_SHORT).show();
+                }
+                refreshRecordingDialog();
+            })
+            .setNegativeButton("取消", null)
+            .show());
+    }
+
+    private void startRecording(String profile, String kind) {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            pendingRecordingProfile = profile;
+            pendingRecordingKind = kind;
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, RECORD_AUDIO_REQUEST_CODE);
+            return;
+        }
+        stopAutoMode();
+        releaseSpeechPlayer();
+        pendingRecordingProfile = profile;
+        pendingRecordingKind = kind;
+        currentRecordingFile = userAudioFile(profile, kind, currentPageIndex + 1);
+        File parent = currentRecordingFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            Toast.makeText(this, "无法创建录音目录", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (currentRecordingFile.exists() && !currentRecordingFile.delete()) {
+            Toast.makeText(this, "无法覆盖旧录音", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mediaRecorder = new MediaRecorder();
+        try {
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mediaRecorder.setAudioEncodingBitRate(96_000);
+            mediaRecorder.setAudioSamplingRate(44_100);
+            mediaRecorder.setOutputFile(currentRecordingFile.getAbsolutePath());
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+            statusText.setText("正在录制" + audioSourceLabel(profile) + "：" + kindLabel(kind));
+            updateRecordingControls();
+            refreshRecordingDialog();
+        } catch (IOException | RuntimeException error) {
+            releaseRecorder();
+            if (currentRecordingFile != null) {
+                currentRecordingFile.delete();
+            }
+            currentRecordingFile = null;
+            pendingRecordingKind = null;
+            pendingRecordingProfile = null;
+            Toast.makeText(this, "录音启动失败：" + error.getMessage(), Toast.LENGTH_LONG).show();
+            updateRecordingControls();
+            refreshRecordingDialog();
+        }
+    }
+
+    private void stopRecording(boolean keepFile) {
+        if (!isRecording && mediaRecorder == null) {
+            return;
+        }
+        try {
+            if (mediaRecorder != null) {
+                mediaRecorder.stop();
+            }
+        } catch (RuntimeException error) {
+            keepFile = false;
+        } finally {
+            releaseRecorder();
+        }
+        isRecording = false;
+        if (!keepFile && currentRecordingFile != null) {
+            currentRecordingFile.delete();
+        }
+        if (keepFile && currentRecordingFile != null && currentRecordingFile.exists()
+            && currentRecordingFile.length() > 0) {
+            Toast.makeText(this, "录音已保存", Toast.LENGTH_SHORT).show();
+            statusText.setText("录音已保存：" + audioSourceLabel(pendingRecordingProfile)
+                + " " + kindLabel(pendingRecordingKind));
+        } else if (currentRecordingFile != null) {
+            currentRecordingFile.delete();
+            statusText.setText("录音未保存");
+        }
+        currentRecordingFile = null;
+        pendingRecordingKind = null;
+        pendingRecordingProfile = null;
+        updateRecordingControls();
+        refreshRecordingDialog();
+    }
+
+    private void releaseRecorder() {
+        if (mediaRecorder != null) {
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
+    }
+
+    private void playRecordingPreview(File file) {
+        if (!file.exists() || file.length() == 0) {
+            Toast.makeText(this, "这段还没有录音", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        stopAutoMode();
+        releaseSpeechPlayer();
+        currentSpeechPlayer = new MediaPlayer();
+        currentSpeechPlayer.setAudioAttributes(new AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .build());
+        try {
+            currentSpeechPlayer.setDataSource(file.getAbsolutePath());
+            currentSpeechPlayer.setOnCompletionListener(player -> {
+                releaseSpeechPlayer();
+                statusText.setText("");
+            });
+            currentSpeechPlayer.prepare();
+            currentSpeechPlayer.start();
+            statusText.setText("正在试听录音...");
+        } catch (IOException error) {
+            releaseSpeechPlayer();
+            Toast.makeText(this, "试听失败：" + error.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != RECORD_AUDIO_REQUEST_CODE) {
+            return;
+        }
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (pendingRecordingProfile != null && pendingRecordingKind != null) {
+                startRecording(pendingRecordingProfile, pendingRecordingKind);
+            }
+        } else {
+            pendingRecordingProfile = null;
+            pendingRecordingKind = null;
+            Toast.makeText(this, "未授权麦克风，无法录音", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void updateAudioSourceButton() {
+        if (audioSourceButton != null) {
+            audioSourceButton.setText("音源：" + audioSourceLabel(selectedAudioSource));
+        }
+    }
+
+    private void updateRecordingControls() {
+        if (autoButton != null) {
+            autoButton.setEnabled(!isRecording);
+        }
+        if (verseButton != null) {
+            verseButton.setEnabled(!locked && !isRecording);
+            storyButton.setEnabled(!locked && !isRecording);
+            audioSourceButton.setEnabled(!locked && !isRecording);
+            recordingManagerButton.setEnabled(!locked && !isRecording);
+            previousButton.setEnabled(!locked && !isRecording && currentPageIndex > 0);
+            nextButton.setEnabled(!locked && !isRecording && currentPageIndex < ContentRepository.PAGES.length - 1);
+        }
+    }
+
+    private File userAudioFile(String profile, String kind, int pageNumber) {
+        return new File(new File(getFilesDir(), "user_audio/" + normalizeAudioSource(profile)),
+            kind + "_" + String.format(Locale.US, "%03d", pageNumber) + ".m4a");
+    }
+
+    private String normalizeAudioSource(String value) {
+        if (SOURCE_MOM.equals(value) || SOURCE_DAD.equals(value) || SOURCE_CUSTOM.equals(value)) {
+            return value;
+        }
+        return SOURCE_BUILTIN;
+    }
+
+    private String audioSourceLabel(String source) {
+        if (SOURCE_MOM.equals(source)) {
+            return "妈妈录制";
+        }
+        if (SOURCE_DAD.equals(source)) {
+            return "爸爸录制";
+        }
+        if (SOURCE_CUSTOM.equals(source)) {
+            return "自定义录制";
+        }
+        return "APP自带音频";
+    }
+
+    private String kindLabel(String kind) {
+        return "story".equals(kind) ? "讲故事" : "读三字经";
+    }
+
     private void setLocked(boolean shouldLock) {
         locked = shouldLock;
         if (lockOverlay != null) {
             lockOverlay.setVisibility(locked ? View.VISIBLE : View.GONE);
         }
-        if (previousButton != null) {
-            previousButton.setEnabled(!locked && currentPageIndex > 0);
-            nextButton.setEnabled(!locked && currentPageIndex < ContentRepository.PAGES.length - 1);
-            verseButton.setEnabled(!locked);
-            storyButton.setEnabled(!locked);
-        }
+        updateRecordingControls();
     }
 
     private void handleUnlockTouch(View view, MotionEvent event) {
@@ -706,7 +1101,7 @@ public final class MainActivity extends Activity {
             || event.getActionMasked() == MotionEvent.ACTION_CANCEL
             || event.getPointerCount() < 3) {
             cancelUnlock();
-            lockHint.setText("自动播放已锁定\n三指同时按住左上、右上、下方中央解锁");
+            lockHint.setText("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁");
             return;
         }
 
@@ -723,7 +1118,7 @@ public final class MainActivity extends Activity {
             }
         } else {
             cancelUnlock();
-            lockHint.setText("位置不正确\n请同时按住左上、右上、下方中央");
+            lockHint.setText("位置不正确  ·  请同时按住左上、右上、下方中央");
         }
     }
 
