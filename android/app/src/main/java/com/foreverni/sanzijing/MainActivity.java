@@ -19,6 +19,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -267,17 +268,21 @@ public final class MainActivity extends Activity {
     }
 
     private void buildLockOverlay() {
-        LinearLayout overlay = new LinearLayout(this);
-        overlay.setOrientation(LinearLayout.VERTICAL);
-        overlay.setGravity(Gravity.CENTER);
-        overlay.setPadding(dp(24), dp(24), dp(24), dp(24));
-        overlay.setBackgroundColor(Color.argb(236, 37, 54, 45));
+        FrameLayout overlay = new FrameLayout(this);
+        overlay.setPadding(dp(18), dp(18), dp(18), dp(28));
+        overlay.setBackgroundColor(Color.TRANSPARENT);
         overlay.setVisibility(View.GONE);
 
-        lockHint = label("自动播放已锁定\n三指同时按住左上、右上、下方中央解锁", 22, Color.WHITE, Typeface.BOLD);
+        lockHint = label("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁", 15, Color.WHITE, Typeface.BOLD);
         lockHint.setGravity(Gravity.CENTER);
-        lockHint.setLineSpacing(dp(6), 1.0f);
-        overlay.addView(lockHint, matchWrap());
+        lockHint.setPadding(dp(14), dp(10), dp(14), dp(10));
+        lockHint.setBackground(rounded(Color.argb(218, 37, 54, 45), Color.argb(230, 154, 190, 163)));
+        FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+        );
+        overlay.addView(lockHint, hintParams);
 
         overlay.setOnTouchListener((v, event) -> {
             handleUnlockTouch(v, event);
@@ -318,6 +323,7 @@ public final class MainActivity extends Activity {
     private void startAutoMode() {
         autoMode = true;
         autoRound = 0;
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         autoButton.setText("停止自动播放");
         setLocked(true);
         statusText.setText("自动播放：每页读三字经、讲故事各 3 次。");
@@ -327,6 +333,7 @@ public final class MainActivity extends Activity {
     private void stopAutoMode() {
         autoMode = false;
         autoRound = 0;
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (pendingAutoRunnable != null) {
             handler.removeCallbacks(pendingAutoRunnable);
         }
