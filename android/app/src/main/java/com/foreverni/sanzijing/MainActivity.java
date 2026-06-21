@@ -45,6 +45,11 @@ public final class MainActivity extends Activity {
     private static final int SWIPE_THRESHOLD_DP = 80;
     private static final String PREFS_NAME = "sanzijing_settings";
     private static final String PREF_AUDIO_SOURCE = "audio_source";
+    private static final String PREF_PROGRESS_PAGE = "progress_page";
+    private static final String PREF_PROGRESS_KIND = "progress_kind";
+    private static final String PREF_PROGRESS_POSITION_MS = "progress_position_ms";
+    private static final String PREF_PROGRESS_WAS_PLAYING = "progress_was_playing";
+    private static final String PREF_PROGRESS_MANUAL_PAGE = "progress_manual_page";
     private static final String SOURCE_BUILTIN = "builtin";
     private static final String SOURCE_MOM = "mom";
     private static final String SOURCE_DAD = "dad";
@@ -68,8 +73,12 @@ public final class MainActivity extends Activity {
     private String recordingProfile = SOURCE_MOM;
     private String pendingRecordingKind;
     private String pendingRecordingProfile;
+    private String activeSpeechKind = "";
+    private String pendingResumeKind;
     private String activeSpeechText = "";
     private String activeSpeechBaseId = "";
+    private int pendingResumePositionMs = 0;
+    private boolean pendingResumeManualPage = false;
     private File pendingSpeechFile;
     private File currentRecordingFile;
     private MediaPlayer currentSpeechPlayer;
@@ -107,8 +116,16 @@ public final class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         selectedAudioSource = normalizeAudioSource(preferences.getString(PREF_AUDIO_SOURCE, SOURCE_BUILTIN));
+        restoreSavedPage();
         buildLayout();
         renderPage();
+        schedulePlaybackResumeIfNeeded();
+    }
+
+    @Override
+    protected void onPause() {
+        savePlaybackProgress(isSpeechPlayerPlaying());
+        super.onPause();
     }
 
     @Override
@@ -371,6 +388,7 @@ public final class MainActivity extends Activity {
         releaseSpeechPlayer();
         currentPageIndex = nextIndex;
         renderPage();
+        savePlaybackProgress(false);
     }
 
     private void speakManualPage() {
@@ -378,6 +396,70 @@ public final class MainActivity extends Activity {
         manualPagePlayback = true;
         statusText.setText("正在播放当前页...");
         speak("verse", "manual-page-verse");
+    }
+
+    private void restoreSavedPage() {
+        int savedPage = preferences.getInt(PREF_PROGRESS_PAGE, 0);
+        if (savedPage >= 0 && savedPage < ContentRepository.PAGES.length) {
+            currentPageIndex = savedPage;
+        }
+        if (preferences.getBoolean(PREF_PROGRESS_WAS_PLAYING, false)) {
+            String kind = preferences.getString(PREF_PROGRESS_KIND, "");
+            if ("verse".equals(kind) || "story".equals(kind)) {
+                pendingResumeKind = kind;
+                pendingResumePositionMs = Math.max(0, preferences.getInt(PREF_PROGRESS_POSITION_MS, 0));
+                pendingResumeManualPage = preferences.getBoolean(PREF_PROGRESS_MANUAL_PAGE, false);
+            }
+        }
+    }
+
+    private void schedulePlaybackResumeIfNeeded() {
+        if (pendingResumeKind == null) {
+            return;
+        }
+        handler.postDelayed(() -> {
+            String kind = pendingResumeKind;
+            int positionMs = pendingResumePositionMs;
+            boolean resumeManualPage = pendingResumeManualPage;
+            pendingResumeKind = null;
+            pendingResumePositionMs = 0;
+            pendingResumeManualPage = false;
+            if (isRecording || locked) {
+                return;
+            }
+            manualPagePlayback = resumeManualPage;
+            statusText.setText("已恢复到上次播放位置...");
+            speak(kind, resumeManualPage && "story".equals(kind) ? "manual-page-story" : "manual-page-" + kind, positionMs);
+        }, 250);
+    }
+
+    private void savePlaybackProgress(boolean wasPlaying) {
+        int positionMs = 0;
+        if (wasPlaying && currentSpeechPlayer != null) {
+            try {
+                positionMs = Math.max(0, currentSpeechPlayer.getCurrentPosition());
+            } catch (IllegalStateException ignored) {
+                positionMs = 0;
+            }
+        }
+        preferences.edit()
+            .putInt(PREF_PROGRESS_PAGE, currentPageIndex)
+            .putString(PREF_PROGRESS_KIND, wasPlaying ? activeSpeechKind : "")
+            .putInt(PREF_PROGRESS_POSITION_MS, wasPlaying ? positionMs : 0)
+            .putBoolean(PREF_PROGRESS_WAS_PLAYING, wasPlaying)
+            .putBoolean(PREF_PROGRESS_MANUAL_PAGE, wasPlaying && manualPagePlayback)
+            .apply();
+    }
+
+    private boolean isSpeechPlayerPlaying() {
+        if (currentSpeechPlayer == null) {
+            return false;
+        }
+        try {
+            return currentSpeechPlayer.isPlaying();
+        } catch (IllegalStateException ignored) {
+            return false;
+        }
     }
 
     private void startAutoMode() {
@@ -449,10 +531,12 @@ public final class MainActivity extends Activity {
         if (manualPagePlayback && utteranceId.equals("manual-page-story")) {
             manualPagePlayback = false;
             statusText.setText("");
+            savePlaybackProgress(false);
             return;
         }
         if (!autoMode) {
             statusText.setText("");
+            savePlaybackProgress(false);
             return;
         }
         if (utteranceId.startsWith("auto-verse-")) {
@@ -480,18 +564,23 @@ public final class MainActivity extends Activity {
     }
 
     private void speak(String kind, String utteranceId) {
+        speak(kind, utteranceId, 0);
+    }
+
+    private void speak(String kind, String utteranceId, int startPositionMs) {
         ClassicPage page = page();
         String text = "verse".equals(kind)
             ? page.verse
             : page.story + "。" + page.moral;
+        activeSpeechKind = kind;
         activeSpeechText = text;
         activeSpeechBaseId = utteranceId;
         ttsFallbackAttempted = false;
         if (!SOURCE_BUILTIN.equals(selectedAudioSource)
-            && playUserSpeech(selectedAudioSource, kind, utteranceId)) {
+            && playUserSpeech(selectedAudioSource, kind, utteranceId, startPositionMs)) {
             return;
         }
-        if (playBundledSpeech(kind, utteranceId)) {
+        if (playBundledSpeech(kind, utteranceId, startPositionMs)) {
             return;
         }
         if (!ensureTtsReady()) {
@@ -500,7 +589,7 @@ public final class MainActivity extends Activity {
         synthesizeSpeech(text, utteranceId);
     }
 
-    private boolean playUserSpeech(String profile, String kind, String utteranceId) {
+    private boolean playUserSpeech(String profile, String kind, String utteranceId, int startPositionMs) {
         File audioFile = userAudioFile(profile, kind, currentPageIndex + 1);
         if (!audioFile.exists() || audioFile.length() == 0) {
             return false;
@@ -520,13 +609,14 @@ public final class MainActivity extends Activity {
             });
             currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
                 releaseSpeechPlayer();
-                if (!playBundledSpeech(kind, utteranceId)) {
+                if (!playBundledSpeech(kind, utteranceId, startPositionMs)) {
                     statusText.setText("用户录音无法播放，且内置语音缺失：" + what + "/" + extra);
                     stopAutoMode();
                 }
                 return true;
             });
             currentSpeechPlayer.prepare();
+            seekSpeechPlayer(startPositionMs);
             currentSpeechPlayer.start();
             statusText.setText("正在播放" + audioSourceLabel(profile) + "...");
             return true;
@@ -536,7 +626,24 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private boolean playBundledSpeech(String kind, String utteranceId) {
+    private void seekSpeechPlayer(int startPositionMs) {
+        if (currentSpeechPlayer == null || startPositionMs <= 0) {
+            return;
+        }
+        try {
+            int duration = currentSpeechPlayer.getDuration();
+            int safePosition = duration > 0
+                ? Math.min(startPositionMs, Math.max(0, duration - 500))
+                : startPositionMs;
+            if (safePosition > 0) {
+                currentSpeechPlayer.seekTo(safePosition);
+            }
+        } catch (IllegalStateException ignored) {
+            // If the platform cannot seek this source, resume from the start of the segment.
+        }
+    }
+
+    private boolean playBundledSpeech(String kind, String utteranceId, int startPositionMs) {
         releaseSpeechPlayer();
         clearSpeechTimeout();
         String audioPath = "audio/" + kind + "_" + String.format(Locale.US, "%03d", currentPageIndex + 1) + ".wav";
@@ -562,6 +669,7 @@ public final class MainActivity extends Activity {
                 return true;
             });
             currentSpeechPlayer.prepare();
+            seekSpeechPlayer(startPositionMs);
             currentSpeechPlayer.start();
             statusText.setText("正在播放内置语音...");
             ttsSettingsButton.setVisibility(View.GONE);
