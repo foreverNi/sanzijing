@@ -35,9 +35,10 @@ foreach ($blockMatch in $blocks) {
     $pinyin = Convert-ToJavaString (Read-JsString $block "pinyin")
     $story = Convert-ToJavaString (Read-JsString $block "story")
     $moral = Convert-ToJavaString (Read-JsString $block "moral")
+    $animation = Convert-ToJavaString (Read-JsString $block "animation")
     $bgColor = (Read-JsString $block "bgColor").TrimStart("#").ToUpperInvariant()
     $accentColor = (Read-JsString $block "accentColor").TrimStart("#").ToUpperInvariant()
-    $items.Add("        new ClassicPage($verse, $pinyin, $story, $moral, 0xFF$bgColor, 0xFF$accentColor)")
+    $items.Add("        new ClassicPage($verse, $pinyin, $story, $moral, $animation, 0xFF$bgColor, 0xFF$accentColor)")
 }
 
 if ($items.Count -eq 0) {

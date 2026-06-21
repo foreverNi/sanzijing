@@ -1,9 +1,15 @@
 package com.foreverni.sanzijing;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,6 +26,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
@@ -37,14 +47,21 @@ public final class MainActivity extends Activity {
     private boolean autoMode = false;
     private boolean ttsReady = false;
     private boolean locked = false;
+    private boolean ttsFallbackAttempted = false;
+    private String activeSpeechText = "";
+    private String activeSpeechBaseId = "";
+    private File pendingSpeechFile;
+    private MediaPlayer currentSpeechPlayer;
     private Runnable pendingAutoRunnable;
     private Runnable pendingUnlockRunnable;
+    private Runnable pendingSpeechTimeoutRunnable;
 
     private FrameLayout root;
     private LinearLayout content;
     private TextView pageIndicator;
     private TextView verseText;
     private TextView pinyinText;
+    private NativeAnimationView sceneView;
     private TextView storyText;
     private TextView moralText;
     private TextView statusText;
@@ -54,6 +71,7 @@ public final class MainActivity extends Activity {
     private Button verseButton;
     private Button storyButton;
     private Button autoButton;
+    private Button ttsSettingsButton;
     private View lockOverlay;
     private TextToSpeech textToSpeech;
 
@@ -62,7 +80,6 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         buildLayout();
-        configureTts();
         renderPage();
     }
 
@@ -80,30 +97,67 @@ public final class MainActivity extends Activity {
         textToSpeech = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
             if (ttsReady) {
-                int localeResult = textToSpeech.setLanguage(Locale.CHINA);
-                textToSpeech.setSpeechRate(0.82f);
+                int localeResult = chooseChineseVoice();
+                textToSpeech.setAudioAttributes(new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build());
+                textToSpeech.setSpeechRate(0.86f);
                 textToSpeech.setPitch(1.08f);
-                ttsReady = localeResult != TextToSpeech.LANG_MISSING_DATA
-                    && localeResult != TextToSpeech.LANG_NOT_SUPPORTED;
+                ttsReady = localeResult >= TextToSpeech.LANG_AVAILABLE;
             }
-            runOnUiThread(() -> statusText.setText(ttsReady ? "" : "当前系统 TTS 不支持普通话，请在系统设置中安装中文语音。"));
+            runOnUiThread(() -> {
+                ttsSettingsButton.setVisibility(ttsReady ? View.GONE : View.VISIBLE);
+                statusText.setText(ttsReady ? "" : ttsDiagnostic("当前系统 TTS 不支持普通话"));
+            });
         });
         textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
             @Override
             public void onStart(String utteranceId) {
+                runOnUiThread(() -> {
+                    if (isSynthUtterance(utteranceId)) {
+                        statusText.setText("正在生成系统 TTS 语音...");
+                        return;
+                    }
+                    clearSpeechTimeout();
+                    if (!autoMode) {
+                        statusText.setText("正在朗读...");
+                    }
+                });
             }
 
             @Override
             public void onDone(String utteranceId) {
-                runOnUiThread(() -> handleSpeechDone(utteranceId));
+                if (isSynthUtterance(utteranceId)) {
+                    runOnUiThread(() -> playSynthesizedSpeech(baseSynthId(utteranceId)));
+                    return;
+                }
+                runOnUiThread(() -> clearSpeechTimeout());
+                if (isLastSpeechChunk(utteranceId)) {
+                    runOnUiThread(() -> handleSpeechDone(baseSpeechId(utteranceId)));
+                }
             }
 
             @Override
             public void onError(String utteranceId) {
                 runOnUiThread(() -> {
-                    statusText.setText("系统 TTS 播放失败，请检查系统语音设置。");
+                    clearSpeechTimeout();
+                    if (!ttsFallbackAttempted && activeSpeechText != null && !activeSpeechText.isEmpty()) {
+                        ttsFallbackAttempted = true;
+                        textToSpeech.setLanguage(Locale.getDefault());
+                        statusText.setText("正在使用系统默认 TTS 重试...");
+                        synthesizeSpeech(activeSpeechText, activeSpeechBaseId);
+                        return;
+                    }
+                    ttsSettingsButton.setVisibility(View.VISIBLE);
+                    statusText.setText(ttsDiagnostic("系统 TTS 播放失败"));
                     stopAutoMode();
                 });
+            }
+
+            @Override
+            public void onError(String utteranceId, int errorCode) {
+                onError(utteranceId);
             }
         });
     }
@@ -116,13 +170,13 @@ public final class MainActivity extends Activity {
 
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(18), dp(18), dp(18));
+        content.setPadding(dp(18), dp(16), dp(18), dp(28));
         scrollView.addView(content, new ScrollView.LayoutParams(
             ScrollView.LayoutParams.MATCH_PARENT,
             ScrollView.LayoutParams.WRAP_CONTENT
         ));
 
-        TextView title = label("三字经故事乐园", 28, TEXT_PRIMARY, Typeface.BOLD);
+        TextView title = label("三字经故事乐园", 25, TEXT_PRIMARY, Typeface.BOLD);
         title.setGravity(Gravity.CENTER);
         content.addView(title, matchWrap());
 
@@ -137,20 +191,23 @@ public final class MainActivity extends Activity {
 
         pinyinText = label("", 17, TEXT_SECONDARY, Typeface.NORMAL);
         pinyinText.setGravity(Gravity.CENTER);
-        pinyinText.setPadding(dp(10), dp(0), dp(10), dp(18));
+        pinyinText.setPadding(dp(10), dp(0), dp(10), dp(10));
         content.addView(pinyinText, matchWrap());
 
+        sceneView = new NativeAnimationView(this);
+        content.addView(sceneView, sceneLayout());
+
         TextView storyTitle = label("故事解说", 20, TEXT_PRIMARY, Typeface.BOLD);
-        storyTitle.setPadding(0, dp(20), 0, dp(8));
+        storyTitle.setPadding(0, dp(10), 0, dp(8));
         content.addView(storyTitle, matchWrap());
 
-        storyText = label("", 18, TEXT_PRIMARY, Typeface.NORMAL);
-        storyText.setLineSpacing(dp(4), 1.0f);
-        storyText.setPadding(dp(16), dp(16), dp(16), dp(16));
+        storyText = label("", 17, TEXT_PRIMARY, Typeface.NORMAL);
+        storyText.setLineSpacing(dp(2), 1.0f);
+        storyText.setPadding(dp(14), dp(14), dp(14), dp(14));
         content.addView(storyText, panelLayout());
 
-        moralText = label("", 17, TEXT_SECONDARY, Typeface.BOLD);
-        moralText.setPadding(dp(16), dp(14), dp(16), dp(14));
+        moralText = label("", 16, TEXT_SECONDARY, Typeface.BOLD);
+        moralText.setPadding(dp(14), dp(12), dp(14), dp(12));
         content.addView(moralText, panelLayout());
 
         LinearLayout audioRow = row();
@@ -168,7 +225,11 @@ public final class MainActivity extends Activity {
         content.addView(navRow, matchWrap());
 
         autoButton = actionButton("自动播放");
-        content.addView(autoButton, matchWrap());
+        content.addView(autoButton, autoButtonLayout());
+
+        ttsSettingsButton = actionButton("语音设置");
+        ttsSettingsButton.setVisibility(View.GONE);
+        content.addView(ttsSettingsButton, autoButtonLayout());
 
         statusText = label("", 15, TEXT_SECONDARY, Typeface.NORMAL);
         statusText.setGravity(Gravity.CENTER);
@@ -198,6 +259,7 @@ public final class MainActivity extends Activity {
                 startAutoMode();
             }
         });
+        ttsSettingsButton.setOnClickListener(v -> openTtsSettings());
 
         root.addView(scrollView);
         buildLockOverlay();
@@ -240,6 +302,7 @@ public final class MainActivity extends Activity {
         pinyinText.setText(page.pinyin);
         storyText.setText(page.story);
         moralText.setText("小小启示：" + page.moral);
+        sceneView.setPage(page);
         previousButton.setEnabled(currentPageIndex > 0 && !locked);
         nextButton.setEnabled(currentPageIndex < ContentRepository.PAGES.length - 1 && !locked);
         if (!autoMode) {
@@ -248,17 +311,11 @@ public final class MainActivity extends Activity {
     }
 
     private void speakManual(String kind) {
-        if (!ensureTtsReady()) {
-            return;
-        }
         stopAutoMode();
         speak(kind, "manual-" + kind);
     }
 
     private void startAutoMode() {
-        if (!ensureTtsReady()) {
-            return;
-        }
         autoMode = true;
         autoRound = 0;
         autoButton.setText("停止自动播放");
@@ -276,12 +333,14 @@ public final class MainActivity extends Activity {
         if (pendingUnlockRunnable != null) {
             handler.removeCallbacks(pendingUnlockRunnable);
         }
+        clearSpeechTimeout();
         pendingAutoRunnable = null;
         pendingUnlockRunnable = null;
         setLocked(false);
         if (textToSpeech != null) {
             textToSpeech.stop();
         }
+        releaseSpeechPlayer();
         if (autoButton != null) {
             autoButton.setText("自动播放");
         }
@@ -326,16 +385,297 @@ public final class MainActivity extends Activity {
         if (ttsReady) {
             return true;
         }
-        Toast.makeText(this, "系统 TTS 正在初始化或不支持中文语音", Toast.LENGTH_SHORT).show();
+        if (textToSpeech == null) {
+            statusText.setText("内置语音缺失，正在尝试系统 TTS...");
+            configureTts();
+            return false;
+        }
+        ttsSettingsButton.setVisibility(View.VISIBLE);
+        statusText.setText(ttsDiagnostic("系统 TTS 正在初始化或不支持中文语音"));
+        Toast.makeText(this, "请先安装或启用中文系统 TTS", Toast.LENGTH_SHORT).show();
         return false;
     }
 
     private void speak(String kind, String utteranceId) {
         ClassicPage page = page();
         String text = "verse".equals(kind)
-            ? page.verse + "。" + page.pinyin
+            ? page.verse
             : page.story + "。" + page.moral;
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId);
+        activeSpeechText = text;
+        activeSpeechBaseId = utteranceId;
+        ttsFallbackAttempted = false;
+        if (playBundledSpeech(kind, utteranceId)) {
+            return;
+        }
+        if (!ensureTtsReady()) {
+            return;
+        }
+        synthesizeSpeech(text, utteranceId);
+    }
+
+    private boolean playBundledSpeech(String kind, String utteranceId) {
+        releaseSpeechPlayer();
+        clearSpeechTimeout();
+        String audioPath = "audio/" + kind + "_" + String.format(Locale.US, "%03d", currentPageIndex + 1) + ".wav";
+        try (AssetFileDescriptor descriptor = getAssets().openFd(audioPath)) {
+            currentSpeechPlayer = new MediaPlayer();
+            currentSpeechPlayer.setAudioAttributes(new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .build());
+            currentSpeechPlayer.setDataSource(
+                descriptor.getFileDescriptor(),
+                descriptor.getStartOffset(),
+                descriptor.getLength()
+            );
+            currentSpeechPlayer.setOnCompletionListener(player -> {
+                releaseSpeechPlayer();
+                if (autoMode) {
+                    handleSpeechDone(utteranceId);
+                } else {
+                    statusText.setText("");
+                }
+            });
+            currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
+                releaseSpeechPlayer();
+                statusText.setText("内置语音播放失败：" + what + "/" + extra);
+                stopAutoMode();
+                return true;
+            });
+            currentSpeechPlayer.prepare();
+            currentSpeechPlayer.start();
+            statusText.setText("正在播放内置语音...");
+            ttsSettingsButton.setVisibility(View.GONE);
+            return true;
+        } catch (IOException error) {
+            return false;
+        }
+    }
+
+    private void synthesizeSpeech(String text, String utteranceId) {
+        releaseSpeechPlayer();
+        clearSpeechTimeout();
+        try {
+            pendingSpeechFile = File.createTempFile("sanzijing-tts-", ".wav", getCacheDir());
+        } catch (IOException error) {
+            statusText.setText("无法创建语音缓存文件。");
+            stopAutoMode();
+            return;
+        }
+
+        Bundle params = new Bundle();
+        params.putString(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_MUSIC));
+        int result = textToSpeech.synthesizeToFile(text, params, pendingSpeechFile, "synth:" + utteranceId);
+        if (result == TextToSpeech.ERROR) {
+            ttsSettingsButton.setVisibility(View.VISIBLE);
+            statusText.setText(ttsDiagnostic("系统 TTS 无法合成语音"));
+            stopAutoMode();
+            return;
+        }
+        statusText.setText("正在生成系统 TTS 语音...");
+        scheduleSpeechTimeout(15_000, "系统 TTS 合成超时");
+    }
+
+    private void speakChunks(String text, String utteranceId) {
+        List<String> chunks = splitSpeechText(text);
+        if (chunks.isEmpty()) {
+            handleSpeechDone(utteranceId);
+            return;
+        }
+        for (int i = 0; i < chunks.size(); i++) {
+            int queueMode = i == 0 ? TextToSpeech.QUEUE_FLUSH : TextToSpeech.QUEUE_ADD;
+            String chunkId = utteranceId + "#" + i + "/" + chunks.size();
+            Bundle params = new Bundle();
+            params.putString(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(AudioManager.STREAM_MUSIC));
+            int result = textToSpeech.speak(chunks.get(i), queueMode, params, chunkId);
+            if (result == TextToSpeech.ERROR) {
+                ttsSettingsButton.setVisibility(View.VISIBLE);
+                statusText.setText(ttsDiagnostic("系统 TTS 播放失败"));
+                stopAutoMode();
+                return;
+            }
+        }
+        scheduleSpeechTimeout(6_000, "系统 TTS 没有开始发声");
+    }
+
+    private void scheduleSpeechTimeout(int timeoutMs, String message) {
+        clearSpeechTimeout();
+        pendingSpeechTimeoutRunnable = () -> {
+            ttsSettingsButton.setVisibility(View.VISIBLE);
+            statusText.setText(ttsDiagnostic(message));
+            stopAutoMode();
+        };
+        handler.postDelayed(pendingSpeechTimeoutRunnable, timeoutMs);
+    }
+
+    private void clearSpeechTimeout() {
+        if (pendingSpeechTimeoutRunnable != null) {
+            handler.removeCallbacks(pendingSpeechTimeoutRunnable);
+            pendingSpeechTimeoutRunnable = null;
+        }
+    }
+
+    private List<String> splitSpeechText(String text) {
+        String normalized = text == null ? "" : text.replaceAll("\\s+", "");
+        List<String> chunks = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (int i = 0; i < normalized.length(); i++) {
+            char c = normalized.charAt(i);
+            current.append(c);
+            boolean boundary = c == '。' || c == '！' || c == '？' || c == '；' || c == '，';
+            if ((boundary && current.length() >= 24) || current.length() >= 80) {
+                chunks.add(current.toString());
+                current.setLength(0);
+            }
+        }
+        if (current.length() > 0) {
+            chunks.add(current.toString());
+        }
+        return chunks;
+    }
+
+    private boolean isLastSpeechChunk(String utteranceId) {
+        if (utteranceId == null) {
+            return false;
+        }
+        int slash = utteranceId.lastIndexOf('/');
+        int hash = utteranceId.lastIndexOf('#');
+        if (slash < 0 || hash < 0 || slash <= hash) {
+            return true;
+        }
+        int index = Integer.parseInt(utteranceId.substring(hash + 1, slash));
+        int total = Integer.parseInt(utteranceId.substring(slash + 1));
+        return index == total - 1;
+    }
+
+    private String baseSpeechId(String utteranceId) {
+        if (utteranceId == null) {
+            return null;
+        }
+        int hash = utteranceId.lastIndexOf('#');
+        return hash < 0 ? utteranceId : utteranceId.substring(0, hash);
+    }
+
+    private boolean isSynthUtterance(String utteranceId) {
+        return utteranceId != null && utteranceId.startsWith("synth:");
+    }
+
+    private String baseSynthId(String utteranceId) {
+        return utteranceId == null ? null : utteranceId.replaceFirst("^synth:", "");
+    }
+
+    private void playSynthesizedSpeech(String utteranceId) {
+        clearSpeechTimeout();
+        if (pendingSpeechFile == null || !pendingSpeechFile.exists() || pendingSpeechFile.length() == 0) {
+            ttsSettingsButton.setVisibility(View.VISIBLE);
+            statusText.setText(ttsDiagnostic("系统 TTS 没有生成可播放音频"));
+            stopAutoMode();
+            return;
+        }
+        releaseSpeechPlayer();
+        currentSpeechPlayer = new MediaPlayer();
+        currentSpeechPlayer.setAudioAttributes(new AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .build());
+        try {
+            currentSpeechPlayer.setDataSource(pendingSpeechFile.getAbsolutePath());
+            currentSpeechPlayer.setOnCompletionListener(player -> {
+                releaseSpeechPlayer();
+                if (autoMode) {
+                    handleSpeechDone(utteranceId);
+                } else {
+                    statusText.setText("");
+                }
+            });
+            currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
+                releaseSpeechPlayer();
+                ttsSettingsButton.setVisibility(View.VISIBLE);
+                statusText.setText("系统 TTS 已生成音频，但播放失败：" + what + "/" + extra);
+                stopAutoMode();
+                return true;
+            });
+            currentSpeechPlayer.prepare();
+            currentSpeechPlayer.start();
+            statusText.setText("正在朗读...");
+        } catch (IOException error) {
+            releaseSpeechPlayer();
+            statusText.setText("系统 TTS 音频播放失败：" + error.getMessage());
+            stopAutoMode();
+        }
+    }
+
+    private void releaseSpeechPlayer() {
+        if (currentSpeechPlayer != null) {
+            currentSpeechPlayer.release();
+            currentSpeechPlayer = null;
+        }
+        if (pendingSpeechFile != null) {
+            pendingSpeechFile.delete();
+            pendingSpeechFile = null;
+        }
+    }
+
+    private int chooseChineseVoice() {
+        int result = textToSpeech.setLanguage(Locale.SIMPLIFIED_CHINESE);
+        if (result >= TextToSpeech.LANG_AVAILABLE) {
+            return result;
+        }
+        result = textToSpeech.setLanguage(Locale.CHINA);
+        if (result >= TextToSpeech.LANG_AVAILABLE) {
+            return result;
+        }
+        result = textToSpeech.setLanguage(Locale.CHINESE);
+        if (result >= TextToSpeech.LANG_AVAILABLE) {
+            return result;
+        }
+        return result;
+    }
+
+    private String ttsDiagnostic(String prefix) {
+        if (textToSpeech == null) {
+            return prefix + "。TTS 引擎尚未初始化。";
+        }
+        String engine = textToSpeech.getDefaultEngine();
+        int zhCn = textToSpeech.isLanguageAvailable(Locale.SIMPLIFIED_CHINESE);
+        int zh = textToSpeech.isLanguageAvailable(Locale.CHINESE);
+        return prefix + "。默认引擎：" + (engine == null ? "未找到" : engine)
+            + "；可见引擎：" + visibleTtsEngines()
+            + "；普通话支持码：" + zhCn
+            + "；中文支持码：" + zh
+            + "。请点击“语音设置”安装或启用中文语音包。";
+    }
+
+    private String visibleTtsEngines() {
+        List<TextToSpeech.EngineInfo> engines = textToSpeech.getEngines();
+        if (engines == null || engines.isEmpty()) {
+            return "未找到";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < engines.size(); i++) {
+            if (i > 0) {
+                builder.append(",");
+            }
+            builder.append(engines.get(i).name);
+        }
+        return builder.toString();
+    }
+
+    private void openTtsSettings() {
+        Intent intent = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException error) {
+            try {
+                startActivity(new Intent("com.android.settings.TTS_SETTINGS"));
+            } catch (ActivityNotFoundException ignored) {
+                try {
+                    startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
+                } catch (ActivityNotFoundException ignoredAgain) {
+                    Toast.makeText(this, "无法打开系统语音设置，请手动检查文字转语音配置", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
     }
 
     private void setLocked(boolean shouldLock) {
@@ -423,11 +763,17 @@ public final class MainActivity extends Activity {
     private Button actionButton(String text) {
         Button button = new Button(this);
         button.setText(text);
-        button.setTextSize(17);
+        button.setTextSize(16);
         button.setTextColor(Color.WHITE);
         button.setAllCaps(false);
+        button.setIncludeFontPadding(false);
+        button.setMinHeight(0);
+        button.setMinimumHeight(0);
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setStateListAnimator(null);
         button.setBackground(rounded(ACTION_GREEN, ACTION_GREEN));
-        button.setPadding(dp(8), dp(10), dp(8), dp(10));
+        button.setPadding(dp(8), 0, dp(8), 0);
         return button;
     }
 
@@ -435,7 +781,6 @@ public final class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER);
-        row.setPadding(0, dp(10), 0, 0);
         return row;
     }
 
@@ -447,8 +792,20 @@ public final class MainActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams weightedButtonLayout() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        params.setMargins(dp(4), 0, dp(4), 0);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(56), 1);
+        params.setMargins(dp(5), dp(6), dp(5), dp(6));
+        return params;
+    }
+
+    private LinearLayout.LayoutParams autoButtonLayout() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56));
+        params.setMargins(dp(5), dp(8), dp(5), dp(0));
+        return params;
+    }
+
+    private LinearLayout.LayoutParams sceneLayout() {
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(126));
+        params.setMargins(0, dp(6), 0, dp(8));
         return params;
     }
 
