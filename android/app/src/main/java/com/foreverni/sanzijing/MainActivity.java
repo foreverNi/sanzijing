@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -54,11 +55,6 @@ public final class MainActivity extends Activity {
     private static final String SOURCE_MOM = "mom";
     private static final String SOURCE_DAD = "dad";
     private static final String SOURCE_CUSTOM = "custom";
-    private static final int EYE_BACKGROUND = Color.rgb(247, 250, 242);
-    private static final int PANEL_BACKGROUND = Color.rgb(255, 253, 246);
-    private static final int TEXT_PRIMARY = Color.rgb(48, 66, 54);
-    private static final int TEXT_SECONDARY = Color.rgb(93, 112, 97);
-    private static final int ACTION_GREEN = Color.rgb(91, 140, 106);
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private int currentPageIndex = 0;
@@ -88,10 +84,12 @@ public final class MainActivity extends Activity {
     private Runnable pendingUnlockRunnable;
     private Runnable pendingSpeechTimeoutRunnable;
     private SharedPreferences preferences;
+    private UiTokens tokens;
 
     private FrameLayout root;
     private LinearLayout content;
     private LinearLayout recordingDialogContent;
+    private LinearLayout verseCard;
     private TextView pageIndicator;
     private TextView verseText;
     private TextView pinyinText;
@@ -116,6 +114,7 @@ public final class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         selectedAudioSource = normalizeAudioSource(preferences.getString(PREF_AUDIO_SOURCE, SOURCE_BUILTIN));
+        tokens = UiTokens.from(getResources().getConfiguration());
         restoreSavedPage();
         buildLayout();
         renderPage();
@@ -212,11 +211,11 @@ public final class MainActivity extends Activity {
         root = new FrameLayout(this);
         ScrollView scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
-        scrollView.setBackgroundColor(EYE_BACKGROUND);
+        scrollView.setBackgroundColor(tokens.background);
 
         content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(16), dp(18), dp(28));
+        content.setPadding(dp(tokens.screenPadding), dp(18), dp(tokens.screenPadding), dp(28));
         scrollView.addView(content, new ScrollView.LayoutParams(
             ScrollView.LayoutParams.MATCH_PARENT,
             ScrollView.LayoutParams.WRAP_CONTENT
@@ -224,7 +223,7 @@ public final class MainActivity extends Activity {
 
         LinearLayout topBar = row();
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title = label("三字经故事乐园", 25, TEXT_PRIMARY, Typeface.BOLD);
+        TextView title = label("三字经故事乐园", tokens.textHero, tokens.textPrimary, Typeface.BOLD);
         title.setGravity(Gravity.CENTER_VERTICAL);
         topBar.addView(title, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
@@ -234,47 +233,53 @@ public final class MainActivity extends Activity {
         topBar.addView(settingsButton, topButtonLayout());
         content.addView(topBar, matchWrap());
 
-        pageIndicator = label("", 15, TEXT_SECONDARY, Typeface.NORMAL);
+        pageIndicator = label("", tokens.textCaption, tokens.textSecondary, Typeface.NORMAL);
         pageIndicator.setGravity(Gravity.CENTER);
+        pageIndicator.setPadding(0, dp(4), 0, dp(12));
         content.addView(pageIndicator, matchWrap());
 
-        verseText = label("", 30, TEXT_PRIMARY, Typeface.BOLD);
-        verseText.setGravity(Gravity.CENTER);
-        verseText.setPadding(dp(14), dp(18), dp(14), dp(6));
-        content.addView(verseText, panelLayout());
+        verseCard = cardContainer();
+        verseCard.setGravity(Gravity.CENTER);
 
-        pinyinText = label("", 17, TEXT_SECONDARY, Typeface.NORMAL);
+        verseText = label("", tokens.textVerse, tokens.textPrimary, Typeface.BOLD);
+        verseText.setGravity(Gravity.CENTER);
+        verseText.setPadding(dp(8), dp(4), dp(8), dp(6));
+        verseCard.addView(verseText, matchWrap());
+
+        pinyinText = label("", tokens.textBody, tokens.textSecondary, Typeface.NORMAL);
         pinyinText.setGravity(Gravity.CENTER);
-        pinyinText.setPadding(dp(10), dp(0), dp(10), dp(10));
-        content.addView(pinyinText, matchWrap());
+        pinyinText.setPadding(dp(8), 0, dp(8), dp(2));
+        verseCard.addView(pinyinText, matchWrap());
+        content.addView(verseCard, cardLayout());
 
         sceneView = new NativeAnimationView(this);
+        sceneView.setPalette(tokens.dark, tokens.textPrimary, tokens.textSecondary, tokens.surface, tokens.border);
         content.addView(sceneView, sceneLayout());
 
-        TextView storyTitle = label("故事解说", 20, TEXT_PRIMARY, Typeface.BOLD);
-        storyTitle.setPadding(0, dp(10), 0, dp(8));
+        TextView storyTitle = label("故事解说", tokens.textTitle, tokens.textPrimary, Typeface.BOLD);
+        storyTitle.setPadding(dp(2), dp(8), 0, dp(6));
         content.addView(storyTitle, matchWrap());
 
-        storyText = label("", 17, TEXT_PRIMARY, Typeface.NORMAL);
+        storyText = label("", tokens.textBody, tokens.textPrimary, Typeface.NORMAL);
         storyText.setLineSpacing(dp(2), 1.0f);
-        storyText.setPadding(dp(14), dp(14), dp(14), dp(14));
-        content.addView(storyText, panelLayout());
+        storyText.setPadding(dp(tokens.cardPadding), dp(tokens.cardPadding), dp(tokens.cardPadding), dp(tokens.cardPadding));
+        content.addView(storyText, cardLayout());
 
-        moralText = label("", 16, TEXT_SECONDARY, Typeface.BOLD);
-        moralText.setPadding(dp(14), dp(12), dp(14), dp(12));
-        content.addView(moralText, panelLayout());
+        moralText = label("", tokens.textBody, tokens.textSecondary, Typeface.BOLD);
+        moralText.setPadding(dp(tokens.cardPadding), dp(14), dp(tokens.cardPadding), dp(14));
+        content.addView(moralText, compactCardLayout());
 
-        playButton = actionButton("播放");
+        playButton = primaryButton("播放");
         content.addView(playButton, autoButtonLayout());
 
-        autoButton = actionButton("自动播放");
+        autoButton = secondaryButton("自动播放");
         content.addView(autoButton, autoButtonLayout());
 
-        ttsSettingsButton = actionButton("语音设置");
+        ttsSettingsButton = secondaryButton("语音设置");
         ttsSettingsButton.setVisibility(View.GONE);
         content.addView(ttsSettingsButton, autoButtonLayout());
 
-        statusText = label("", 15, TEXT_SECONDARY, Typeface.NORMAL);
+        statusText = label("", tokens.textCaption, tokens.textSecondary, Typeface.NORMAL);
         statusText.setGravity(Gravity.CENTER);
         statusText.setPadding(0, dp(10), 0, 0);
         content.addView(statusText, matchWrap());
@@ -309,10 +314,10 @@ public final class MainActivity extends Activity {
         overlay.setBackgroundColor(Color.TRANSPARENT);
         overlay.setVisibility(View.GONE);
 
-        lockHint = label("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁", 15, Color.WHITE, Typeface.BOLD);
+        lockHint = label("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁", tokens.textCaption, Color.WHITE, Typeface.BOLD);
         lockHint.setGravity(Gravity.CENTER);
         lockHint.setPadding(dp(14), dp(10), dp(14), dp(10));
-        lockHint.setBackground(rounded(Color.argb(218, 37, 54, 45), Color.argb(230, 154, 190, 163)));
+        lockHint.setBackground(rounded(Color.argb(226, 31, 43, 35), Color.TRANSPARENT, tokens.buttonRadius, 0));
         FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -333,11 +338,10 @@ public final class MainActivity extends Activity {
 
     private void renderPage() {
         ClassicPage page = page();
-        content.setBackgroundColor(blend(page.backgroundColor, EYE_BACKGROUND, 0.78f));
-        int softAccent = blend(page.accentColor, EYE_BACKGROUND, 0.58f);
-        verseText.setBackground(rounded(PANEL_BACKGROUND, softAccent));
-        storyText.setBackground(rounded(PANEL_BACKGROUND, softAccent));
-        moralText.setBackground(rounded(blend(page.backgroundColor, PANEL_BACKGROUND, 0.7f), softAccent));
+        content.setBackgroundColor(tokens.background);
+        applyCardStyle(verseCard, tokens.surfaceElevated, tokens.border, tokens.cardRadius, tokens.cardElevation);
+        applyCardStyle(storyText, tokens.surface, tokens.border, tokens.cardRadius, tokens.cardElevation);
+        applyCardStyle(moralText, tokens.surfaceAlt, tokens.border, tokens.cardRadius, 0);
         pageIndicator.setText("第 " + (currentPageIndex + 1) + " 页 / 共 " + ContentRepository.PAGES.length + " 页");
         verseText.setText(page.verse);
         pinyinText.setText(page.pinyin);
@@ -962,12 +966,12 @@ public final class MainActivity extends Activity {
         dialogContent.setPadding(dp(8), dp(4), dp(8), 0);
 
         TextView pageLabel = label("第 " + (currentPageIndex + 1) + " 页 / 共 "
-            + ContentRepository.PAGES.length + " 页", 16, TEXT_PRIMARY, Typeface.BOLD);
+            + ContentRepository.PAGES.length + " 页", tokens.textBody, tokens.textPrimary, Typeface.BOLD);
         pageLabel.setGravity(Gravity.CENTER);
         dialogContent.addView(pageLabel, matchWrap());
 
-        Button profileButton = actionButton("角色：妈妈录制");
-        Button kindButton = actionButton("内容：读三字经");
+        Button profileButton = secondaryButton("角色：妈妈录制");
+        Button kindButton = secondaryButton("内容：读三字经");
         dialogContent.addView(profileButton, dialogButtonLayout());
         dialogContent.addView(kindButton, dialogButtonLayout());
 
@@ -1054,11 +1058,11 @@ public final class MainActivity extends Activity {
         recordingDialogContent.removeAllViews();
 
         TextView pageLabel = label("第 " + (currentPageIndex + 1) + " 页 / 共 "
-            + ContentRepository.PAGES.length + " 页", 16, TEXT_PRIMARY, Typeface.BOLD);
+            + ContentRepository.PAGES.length + " 页", tokens.textBody, tokens.textPrimary, Typeface.BOLD);
         pageLabel.setGravity(Gravity.CENTER);
         recordingDialogContent.addView(pageLabel, matchWrap());
 
-        Button profileButton = actionButton("录音角色：" + audioSourceLabel(recordingProfile));
+        Button profileButton = secondaryButton("录音角色：" + audioSourceLabel(recordingProfile));
         profileButton.setOnClickListener(v -> showRecordingProfileDialog());
         LinearLayout.LayoutParams profileParams = autoButtonLayout();
         profileParams.setMargins(0, dp(8), 0, dp(8));
@@ -1091,15 +1095,15 @@ public final class MainActivity extends Activity {
 
     private void addRecordingSection(String title, String kind) {
         File file = userAudioFile(recordingProfile, kind, currentPageIndex + 1);
-        TextView titleView = label(title + (file.exists() ? "：已录制" : "：未录制"), 15, TEXT_PRIMARY, Typeface.BOLD);
+        TextView titleView = label(title + (file.exists() ? "：已录制" : "：未录制"), tokens.textCaption, tokens.textPrimary, Typeface.BOLD);
         titleView.setPadding(0, dp(8), 0, dp(4));
         recordingDialogContent.addView(titleView, matchWrap());
 
         LinearLayout controls = row();
-        Button recordButton = actionButton(isRecording && kind.equals(pendingRecordingKind)
+        Button recordButton = primaryButton(isRecording && kind.equals(pendingRecordingKind)
             && recordingProfile.equals(pendingRecordingProfile) ? "停止" : "录制");
-        Button previewButton = actionButton("试听");
-        Button deleteButton = actionButton("删除");
+        Button previewButton = secondaryButton("试听");
+        Button deleteButton = ghostButton("删除");
         controls.addView(recordButton, weightedButtonLayout());
         controls.addView(previewButton, weightedButtonLayout());
         controls.addView(deleteButton, weightedButtonLayout());
@@ -1293,8 +1297,9 @@ public final class MainActivity extends Activity {
         if (recordButton != null) {
             recordButton.setEnabled(!locked || isRecording);
             recordButton.setText(isRecording ? "停止" : "录制");
-            recordButton.setBackground(rounded(isRecording ? Color.rgb(178, 73, 68) : ACTION_GREEN,
-                isRecording ? Color.rgb(178, 73, 68) : ACTION_GREEN));
+            styleButton(recordButton, isRecording ? tokens.danger : tokens.primary,
+                isRecording ? tokens.onDanger : tokens.onPrimary,
+                Color.TRANSPARENT, tokens.buttonRadius, tokens.buttonElevation);
         }
     }
 
@@ -1405,10 +1410,13 @@ public final class MainActivity extends Activity {
     }
 
     private Button actionButton(String text) {
+        return primaryButton(text);
+    }
+
+    private Button primaryButton(String text) {
         Button button = new Button(this);
         button.setText(text);
-        button.setTextSize(16);
-        button.setTextColor(Color.WHITE);
+        button.setTextSize(tokens.textButton);
         button.setAllCaps(false);
         button.setIncludeFontPadding(false);
         button.setMinHeight(0);
@@ -1416,13 +1424,26 @@ public final class MainActivity extends Activity {
         button.setMinWidth(0);
         button.setMinimumWidth(0);
         button.setStateListAnimator(null);
-        button.setBackground(rounded(ACTION_GREEN, ACTION_GREEN));
         button.setPadding(dp(8), 0, dp(8), 0);
+        styleButton(button, tokens.primary, tokens.onPrimary, Color.TRANSPARENT,
+            tokens.buttonRadius, tokens.buttonElevation);
+        return button;
+    }
+
+    private Button secondaryButton(String text) {
+        Button button = primaryButton(text);
+        styleButton(button, tokens.surfaceAlt, tokens.primary, tokens.border, tokens.buttonRadius, 0);
+        return button;
+    }
+
+    private Button ghostButton(String text) {
+        Button button = primaryButton(text);
+        styleButton(button, Color.TRANSPARENT, tokens.textSecondary, tokens.border, tokens.buttonRadius, 0);
         return button;
     }
 
     private Button topButton(String text) {
-        Button button = actionButton(text);
+        Button button = ghostButton(text);
         button.setTextSize(14);
         button.setPadding(dp(6), 0, dp(6), 0);
         return button;
@@ -1433,6 +1454,14 @@ public final class MainActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER);
         return row;
+    }
+
+    private LinearLayout cardContainer() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(tokens.cardPadding), dp(tokens.cardPadding), dp(tokens.cardPadding), dp(tokens.cardPadding));
+        applyCardStyle(card, tokens.surfaceElevated, tokens.border, tokens.cardRadius, tokens.cardElevation);
+        return card;
     }
 
     private LinearLayout.LayoutParams matchWrap() {
@@ -1449,7 +1478,7 @@ public final class MainActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams topButtonLayout() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(64), dp(42));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(64), dp(tokens.minTouch));
         params.setMargins(dp(6), 0, 0, 0);
         return params;
     }
@@ -1461,33 +1490,122 @@ public final class MainActivity extends Activity {
     }
 
     private LinearLayout.LayoutParams autoButtonLayout() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56));
-        params.setMargins(dp(5), dp(8), dp(5), dp(0));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(54));
+        params.setMargins(0, dp(10), 0, 0);
         return params;
     }
 
     private LinearLayout.LayoutParams sceneLayout() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(126));
-        params.setMargins(0, dp(6), 0, dp(8));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(136));
+        params.setMargins(0, dp(14), 0, dp(14));
         return params;
     }
 
-    private LinearLayout.LayoutParams panelLayout() {
+    private LinearLayout.LayoutParams cardLayout() {
         LinearLayout.LayoutParams params = matchWrap();
-        params.setMargins(0, dp(8), 0, dp(8));
+        params.setMargins(0, dp(8), 0, dp(12));
+        return params;
+    }
+
+    private LinearLayout.LayoutParams compactCardLayout() {
+        LinearLayout.LayoutParams params = matchWrap();
+        params.setMargins(0, dp(8), 0, dp(14));
         return params;
     }
 
     private GradientDrawable rounded(int color, int strokeColor) {
+        return rounded(color, strokeColor, tokens.cardRadius, 1);
+    }
+
+    private GradientDrawable rounded(int color, int strokeColor, int radiusDp, int strokeDp) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color);
-        drawable.setCornerRadius(dp(12));
-        drawable.setStroke(dp(1), strokeColor);
+        drawable.setCornerRadius(dp(radiusDp));
+        if (strokeDp > 0 && Color.alpha(strokeColor) > 0) {
+            drawable.setStroke(dp(strokeDp), strokeColor);
+        }
         return drawable;
+    }
+
+    private void applyCardStyle(View view, int fill, int stroke, int radiusDp, int elevationDp) {
+        view.setBackground(rounded(fill, stroke, radiusDp, 1));
+        view.setElevation(dp(elevationDp));
+    }
+
+    private void styleButton(Button button, int fill, int textColor, int stroke, int radiusDp, int elevationDp) {
+        button.setTextColor(textColor);
+        button.setBackground(rounded(fill, stroke, radiusDp, 1));
+        button.setElevation(dp(elevationDp));
     }
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private static final class UiTokens {
+        final boolean dark;
+        final int background;
+        final int surface;
+        final int surfaceElevated;
+        final int surfaceAlt;
+        final int border;
+        final int textPrimary;
+        final int textSecondary;
+        final int primary;
+        final int onPrimary;
+        final int danger;
+        final int onDanger;
+        final int screenPadding = 20;
+        final int cardPadding = 18;
+        final int cardRadius = 18;
+        final int buttonRadius = 14;
+        final int cardElevation;
+        final int buttonElevation;
+        final int minTouch = 48;
+        final int textHero = 24;
+        final int textVerse = 30;
+        final int textTitle = 19;
+        final int textBody = 17;
+        final int textCaption = 14;
+        final int textButton = 16;
+
+        private UiTokens(boolean dark) {
+            this.dark = dark;
+            if (dark) {
+                background = Color.rgb(18, 24, 20);
+                surface = Color.rgb(27, 36, 30);
+                surfaceElevated = Color.rgb(32, 42, 35);
+                surfaceAlt = Color.rgb(24, 34, 28);
+                border = Color.rgb(55, 72, 61);
+                textPrimary = Color.rgb(232, 240, 232);
+                textSecondary = Color.rgb(176, 193, 180);
+                primary = Color.rgb(142, 190, 153);
+                onPrimary = Color.rgb(16, 31, 20);
+                danger = Color.rgb(214, 112, 106);
+                onDanger = Color.rgb(32, 16, 15);
+                cardElevation = 0;
+                buttonElevation = 0;
+            } else {
+                background = Color.rgb(244, 247, 241);
+                surface = Color.rgb(254, 252, 247);
+                surfaceElevated = Color.rgb(255, 254, 250);
+                surfaceAlt = Color.rgb(235, 242, 232);
+                border = Color.rgb(214, 224, 210);
+                textPrimary = Color.rgb(34, 51, 39);
+                textSecondary = Color.rgb(92, 109, 97);
+                primary = Color.rgb(76, 123, 88);
+                onPrimary = Color.WHITE;
+                danger = Color.rgb(178, 73, 68);
+                onDanger = Color.WHITE;
+                cardElevation = 1;
+                buttonElevation = 1;
+            }
+        }
+
+        static UiTokens from(Configuration configuration) {
+            int mode = configuration.uiMode & Configuration.UI_MODE_NIGHT_MASK;
+            return new UiTokens(mode == Configuration.UI_MODE_NIGHT_YES);
+        }
     }
 
     private static int blend(int from, int to, float amountTo) {
