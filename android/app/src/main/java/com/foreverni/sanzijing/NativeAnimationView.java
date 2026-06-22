@@ -1,19 +1,32 @@
 package com.foreverni.sanzijing;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.os.SystemClock;
 import android.view.View;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Locale;
+
 final class NativeAnimationView extends View {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
+    private final Rect sourceRect = new Rect();
+    private final RectF imageRect = new RectF();
+    private final Path clipPath = new Path();
     private ClassicPage page;
+    private Bitmap illustration;
     private long startedAtMs = SystemClock.uptimeMillis();
+    private int pageNumber = 1;
     private boolean darkMode = false;
     private int textPrimary = Color.rgb(34, 51, 39);
     private int textSecondary = Color.rgb(92, 109, 97);
@@ -22,6 +35,15 @@ final class NativeAnimationView extends View {
 
     NativeAnimationView(Context context) {
         super(context);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        if (illustration != null) {
+            illustration.recycle();
+            illustration = null;
+        }
+        super.onDetachedFromWindow();
     }
 
     void setPalette(boolean dark, int primaryText, int secondaryText, int surfaceColor, int borderColor) {
@@ -34,7 +56,13 @@ final class NativeAnimationView extends View {
     }
 
     void setPage(ClassicPage nextPage) {
+        setPage(nextPage, pageNumber);
+    }
+
+    void setPage(ClassicPage nextPage, int nextPageNumber) {
         page = nextPage;
+        pageNumber = nextPageNumber;
+        loadIllustration(nextPageNumber);
         startedAtMs = SystemClock.uptimeMillis();
         invalidate();
     }
@@ -53,8 +81,69 @@ final class NativeAnimationView extends View {
         int accent = darkMode ? border : blend(page.accentColor, surface, 0.34f);
 
         drawStage(canvas, w, h, bg, accent, t);
-        drawScene(canvas, w, h, t);
+        if (illustration != null) {
+            drawIllustration(canvas, w, h, t, accent);
+        } else {
+            drawScene(canvas, w, h, t);
+        }
         postInvalidateOnAnimation();
+    }
+
+    private void loadIllustration(int nextPageNumber) {
+        if (illustration != null) {
+            illustration.recycle();
+            illustration = null;
+        }
+        String path = "illustrations/page_" + String.format(Locale.US, "%03d", nextPageNumber) + ".png";
+        try (InputStream stream = getContext().getAssets().open(path)) {
+            illustration = BitmapFactory.decodeStream(stream);
+        } catch (IOException ignored) {
+            illustration = null;
+        }
+    }
+
+    private void drawIllustration(Canvas canvas, float w, float h, float t, int accent) {
+        float inset = dp(1.5f);
+        imageRect.set(inset, inset, w - inset, h - inset);
+
+        int save = canvas.save();
+        clipPath.reset();
+        clipPath.addRoundRect(imageRect, dp(18), dp(18), Path.Direction.CW);
+        canvas.clipPath(clipPath);
+
+        float viewRatio = imageRect.width() / Math.max(1f, imageRect.height());
+        float imageRatio = illustration.getWidth() / (float) Math.max(1, illustration.getHeight());
+        int srcW = illustration.getWidth();
+        int srcH = illustration.getHeight();
+        if (imageRatio > viewRatio) {
+            srcW = Math.round(srcH * viewRatio);
+        } else {
+            srcH = Math.round(srcW / viewRatio);
+        }
+        int maxOffsetX = Math.max(0, illustration.getWidth() - srcW);
+        int maxOffsetY = Math.max(0, illustration.getHeight() - srcH);
+        int left = Math.round(maxOffsetX * (0.5f + 0.04f * (float) Math.sin(t * 0.35f)));
+        int top = Math.round(maxOffsetY * (0.5f + 0.04f * (float) Math.cos(t * 0.28f)));
+        sourceRect.set(left, top, left + srcW, top + srcH);
+
+        float breathe = 1f + 0.018f * (float) Math.sin(t * 0.42f);
+        RectF destination = new RectF(imageRect);
+        float extraW = imageRect.width() * (breathe - 1f) / 2f;
+        float extraH = imageRect.height() * (breathe - 1f) / 2f;
+        destination.inset(-extraW, -extraH);
+
+        paint.setAlpha(255);
+        canvas.drawBitmap(illustration, sourceRect, destination, paint);
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(darkMode ? Color.argb(36, 0, 0, 0) : Color.argb(30, 255, 248, 230));
+        canvas.drawRect(imageRect, paint);
+        canvas.restoreToCount(save);
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(dp(1.2f));
+        paint.setColor(accent);
+        canvas.drawRoundRect(imageRect, dp(18), dp(18), paint);
     }
 
     private void drawStage(Canvas canvas, float w, float h, int bg, int accent, float t) {

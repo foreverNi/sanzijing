@@ -347,7 +347,7 @@ public final class MainActivity extends Activity {
         pinyinText.setText(page.pinyin);
         storyText.setText(page.story);
         moralText.setText("小小启示：" + page.moral);
-        sceneView.setPage(page);
+        sceneView.setPage(page, currentPageIndex + 1);
         updateRecordingControls();
         if (!autoMode) {
             statusText.setText("");
