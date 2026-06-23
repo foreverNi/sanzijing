@@ -1,6 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$scriptRoot = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($scriptRoot)) {
+    $scriptRoot = Join-Path (Get-Location) "android\tools"
+}
+$repoRoot = Resolve-Path (Join-Path $scriptRoot "..\..")
 $dataPath = Join-Path $repoRoot "data.js"
 $outputPath = Join-Path $repoRoot "android\app\src\main\java\com\foreverni\sanzijing\ContentRepository.java"
 $source = Get-Content -Encoding UTF8 -Raw -Path $dataPath

@@ -29,7 +29,7 @@ app.add_middleware(
 class TtsRequest(BaseModel):
     text: str = Field(min_length=1, max_length=3000)
     kind: Literal["verse", "story"] = "story"
-    page: int = Field(ge=1, le=100)
+    page: int = Field(ge=1, le=197)
     verse: str = ""
     voice: str = DEFAULT_VOICE
     rate: str = DEFAULT_RATE

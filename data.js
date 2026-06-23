@@ -365,6 +365,159 @@ const threeCharClassic = [
     bgColor: "#FFCDD2",
     accentColor: "#C62828"
   },
+  {
+    verse: "曰喜怒，曰哀惧",
+    pinyin: "yue xi nu, yue ai ju",
+    story: "人有喜悦、愤怒、悲哀和害怕等情绪。古人把这些感受写进《三字经》，是提醒孩子先认识自己的心情，遇事不要被情绪牵着走。",
+    moral: "认识喜怒哀惧",
+    animation: "seven-emotions",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "爱恶欲，七情具",
+    pinyin: "ai wu yu, qi qing ju",
+    story: "喜欢、厌恶和想要也是人的常见情绪。七情人人都有，关键是学会表达和控制，比如生气时先停一停，说清楚原因。",
+    moral: "七情人人都有",
+    animation: "seven-emotions",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "匏土革，木石金",
+    pinyin: "pao tu ge, mu shi jin",
+    story: "古代乐器可以用葫芦、陶土、皮革、木头、石头和金属制成。不同材料发出的声音不同，合在一起就有了丰富的音乐。",
+    moral: "材料不同，声音不同",
+    animation: "eight-sounds",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "丝与竹，乃八音",
+    pinyin: "si yu zhu, nai ba yin",
+    story: "丝弦和竹管也能制成乐器。加上前面的六类材料，合称八音。音乐让礼仪更庄重，也让生活更温和美好。",
+    moral: "八音组成古代音乐",
+    animation: "eight-sounds",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "高曾祖，父而身",
+    pinyin: "gao zeng zu, fu er shen",
+    story: "从高祖、曾祖、祖父到父亲，再到自己，这是一条家族传承的线。每个人都不是孤零零来的，身后有长辈的养育和期望。",
+    moral: "记住家族传承",
+    animation: "family-line",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "身而子，子而孙",
+    pinyin: "shen er zi, zi er sun",
+    story: "从自己往后，是子女和孙辈。家风会一代一代传下去，所以今天养成诚实、勤学、孝顺的习惯，也会影响将来的家庭。",
+    moral: "好家风代代传",
+    animation: "family-line",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "自子孙，至玄曾",
+    pinyin: "zi zi sun, zhi xuan zeng",
+    story: "从子孙再往后，还会有曾孙、玄孙。古人用这些称呼帮助孩子认识亲族关系，也提醒大家珍惜亲人之间的联系。",
+    moral: "认识后代称谓",
+    animation: "family-line",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "乃九族，人之伦",
+    pinyin: "nai jiu zu, ren zhi lun",
+    story: "上自高祖，下至玄孙，合起来就是九族。懂得亲族伦常，才知道尊敬长辈、爱护晚辈、和睦相处。",
+    moral: "九族体现人伦",
+    animation: "family-line",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "父子恩，夫妇从",
+    pinyin: "fu zi en, fu fu cong",
+    story: "父母和子女之间重在恩爱，夫妻之间重在互相扶持。家庭里的每个人都尽自己的责任，家里才会安稳温暖。",
+    moral: "家庭关系要有恩和顺",
+    animation: "ten-duties",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "兄则友，弟则恭",
+    pinyin: "xiong ze you, di ze gong",
+    story: "哥哥姐姐要友爱弟妹，弟弟妹妹要尊敬兄姐。兄弟姐妹不是用来争抢的，而是一起成长、彼此帮助的亲人。",
+    moral: "兄友弟恭",
+    animation: "ten-duties",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "长幼序，友与朋",
+    pinyin: "zhang you xu, you yu peng",
+    story: "长辈和晚辈相处要有次序，朋友之间要讲信义。排队、让座、守约，都是把这些道理用在生活里。",
+    moral: "长幼有序，朋友守信",
+    animation: "ten-duties",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "君则敬，臣则忠",
+    pinyin: "jun ze jing, chen ze zhong",
+    story: "古代讲君臣关系，君主要尊重臣子，臣子要尽忠职守。放到今天，就是负责人要公平待人，做事的人要认真负责。",
+    moral: "彼此尊重，各尽职责",
+    animation: "ten-duties",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "此十义，人所同",
+    pinyin: "ci shi yi, ren suo tong",
+    story: "父子、夫妇、兄弟、长幼、朋友和君臣这些关系中，都有应守的义理。做人先明白责任，社会才会有秩序。",
+    moral: "十义是共同准则",
+    animation: "ten-duties",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "凡训蒙，须讲究",
+    pinyin: "fan xun meng, xu jiang jiu",
+    story: "教育刚开始学习的孩子，不能随便糊弄。老师和父母要认真选择内容、方法和次序，让孩子一步一步打好根基。",
+    moral: "启蒙教育要认真",
+    animation: "early-learning",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "详训诂，明句读",
+    pinyin: "xiang xun gu, ming ju dou",
+    story: "读古书要懂字词意思，也要知道哪里停顿。标点和解释看似小事，却能决定一句话是否读对、理解对。",
+    moral: "读书要懂字义和停顿",
+    animation: "early-learning",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "为学者，必有初",
+    pinyin: "wei xue zhe, bi you chu",
+    story: "做学问一定有起点。先认字、读句、懂礼，再慢慢读经典，就像盖房子要先打地基一样。",
+    moral: "学习要从基础开始",
+    animation: "early-learning",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "小学终，至四书",
+    pinyin: "xiao xue zhong, zhi si shu",
+    story: "启蒙基础学完后，就可以继续学习《论语》《孟子》《中庸》《大学》四书。学习要循序渐进，不能急着跳级。",
+    moral: "基础之后读四书",
+    animation: "early-learning",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
   // ========== 第六部分：典籍经典 ==========
   {
     verse: "论语者，二十篇",
@@ -438,6 +591,258 @@ const threeCharClassic = [
     bgColor: "#E8D5F8",
     accentColor: "#6A1B9A"
   },
+  {
+    verse: "孝经通，四书熟",
+    pinyin: "xiao jing tong, si shu shu",
+    story: "《孝经》讲孝道，四书讲做人和治学。把这些内容读通读熟，孩子就能懂得尊亲、修身和处世的根本道理。",
+    moral: "通孝经，熟四书",
+    animation: "classic-study",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "如六经，始可读",
+    pinyin: "ru liu jing, shi ke du",
+    story: "基础经典熟悉之后，才适合继续读更深的六经。学习像登山，一层一层往上走，才不会迷路。",
+    moral: "先打基础再读六经",
+    animation: "classic-study",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "诗书易，礼春秋",
+    pinyin: "shi shu yi, li chun qiu",
+    story: "六经包括《诗》《书》《易》《礼》《乐》《春秋》。后来《乐经》失传，常以诗、书、易、礼、春秋为核心来学习。",
+    moral: "认识儒家经典",
+    animation: "six-classics",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "号六经，当讲求",
+    pinyin: "hao liu jing, dang jiang qiu",
+    story: "这些经典记录了古人的政治、礼仪、历史和思想。读它们不能只背字句，还要认真讲解和思考。",
+    moral: "读经要讲求义理",
+    animation: "six-classics",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "有连山，有归藏",
+    pinyin: "you lian shan, you gui cang",
+    story: "《连山》和《归藏》是古人传说中的两部易书，后来大多失传。它们说明古人很早就尝试用规律理解天地变化。",
+    moral: "古代有多种易书",
+    animation: "three-yi",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "有周易，三易详",
+    pinyin: "you zhou yi, san yi xiang",
+    story: "加上流传至今的《周易》，合称三易。《周易》讲变化和规律，提醒人做事要观察时势、谨慎选择。",
+    moral: "三易以周易传世",
+    animation: "three-yi",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "有典谟，有训诰",
+    pinyin: "you dian mo, you xun gao",
+    story: "《尚书》中有典、谟、训、诰等文体，记录古代君臣治国的言论。它们像历史档案，帮助后人了解古代政治。",
+    moral: "尚书保存古代政事",
+    animation: "book-documents",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "有誓命，书之奥",
+    pinyin: "you shi ming, shu zhi ao",
+    story: "誓和命也是《尚书》里的重要文体，常见于出征、任命和告诫。读懂这些，才能看到《尚书》深奥的一面。",
+    moral: "尚书文体内容深奥",
+    animation: "book-documents",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "我周公，作周礼",
+    pinyin: "wo zhou gong, zuo zhou li",
+    story: "周公辅佐成王，制定礼乐制度。《周礼》记录了周代官制和礼制，体现古人治理国家重视秩序。",
+    moral: "周公制礼作乐",
+    animation: "zhou-rites",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "著六官，存治体",
+    pinyin: "zhu liu guan, cun zhi ti",
+    story: "《周礼》按天、地、春、夏、秋、冬六官来安排职责。分工清楚，国家机器才能有条不紊地运转。",
+    moral: "六官体现治理体系",
+    animation: "zhou-rites",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "大小戴，注礼记",
+    pinyin: "da xiao dai, zhu li ji",
+    story: "汉代大戴、小戴整理和注解礼学文献，形成《礼记》等内容。许多关于礼仪、学习和修身的名篇都保存在其中。",
+    moral: "大小戴整理礼学",
+    animation: "book-rites",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "述圣言，礼乐备",
+    pinyin: "shu sheng yan, li yue bei",
+    story: "《礼记》记述圣贤关于礼乐的言论。礼让人有规矩，乐让人心平和，礼乐相配才能教化人心。",
+    moral: "礼乐共同教化人",
+    animation: "book-rites",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "曰国风，曰雅颂",
+    pinyin: "yue guo feng, yue ya song",
+    story: "《诗经》分为国风、雅、颂。国风多来自民间歌谣，雅和颂多用于朝廷和祭祀，能看到古人的生活和情感。",
+    moral: "诗经分风雅颂",
+    animation: "book-poetry",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "号四诗，当讽咏",
+    pinyin: "hao si shi, dang feng yong",
+    story: "《诗经》的内容适合反复诵读。读诗不是只看字面，还要体会声音、节奏和情感。",
+    moral: "读诗要反复吟诵",
+    animation: "book-poetry",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "诗既亡，春秋作",
+    pinyin: "shi ji wang, chun qiu zuo",
+    story: "周代采诗制度衰落后，孔子整理《春秋》。这部书用简洁文字记录鲁国历史，也寄托了是非判断。",
+    moral: "春秋记录历史褒贬",
+    animation: "spring-autumn",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "寓褒贬，别善恶",
+    pinyin: "yu bao bian, bie shan e",
+    story: "《春秋》写事很简短，却暗含赞许和批评。读历史要分清善恶，知道什么值得学习，什么应该警惕。",
+    moral: "历史能辨善恶",
+    animation: "spring-autumn",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "三传者，有公羊",
+    pinyin: "san zhuan zhe, you gong yang",
+    story: "解释《春秋》的书有三传，其中一部是《公羊传》。它帮助后人理解《春秋》简短文字背后的意思。",
+    moral: "公羊传解释春秋",
+    animation: "three-commentaries",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "有左氏，有谷梁",
+    pinyin: "you zuo shi, you gu liang",
+    story: "另外两部是《左传》和《谷梁传》。《左传》故事详细，《谷梁传》重在义理，三传合看更完整。",
+    moral: "三传合解春秋",
+    animation: "three-commentaries",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "经既明，方读子",
+    pinyin: "jing ji ming, fang du zi",
+    story: "经书的根本道理明白后，再去读诸子百家的书。先有主干，再看分支，知识就不会散乱。",
+    moral: "先明经，再读子",
+    animation: "classic-order",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "撮其要，记其事",
+    pinyin: "cuo qi yao, ji qi shi",
+    story: "读诸子书要抓住要点，也要记住重要事例。只背很多名字没有用，能说出道理和故事才算真正理解。",
+    moral: "读书要抓要点",
+    animation: "classic-order",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "五子者，有荀扬",
+    pinyin: "wu zi zhe, you xun yang",
+    story: "五子中有荀子和扬雄。荀子重视礼法和学习，扬雄擅长文章与思想，他们都是后人研读的学者。",
+    moral: "认识荀子和扬雄",
+    animation: "five-masters",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "文中子，及老庄",
+    pinyin: "wen zhong zi, ji lao zhuang",
+    story: "文中子、老子、庄子也列在五子之中。老庄讲自然和逍遥，能让人从另一面思考人生。",
+    moral: "诸子思想各有重点",
+    animation: "five-masters",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "经子通，读诸史",
+    pinyin: "jing zi tong, du zhu shi",
+    story: "经书和诸子读通之后，就可以读历代史书。历史记录兴衰成败，能帮助人看清事情的来龙去脉。",
+    moral: "通经子后读史",
+    animation: "history-study",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "考世系，知终始",
+    pinyin: "kao shi xi, zhi zhong shi",
+    story: "读历史要考察朝代世系，知道每件事如何开始、如何结束。这样才不会只记零散故事，而能看见历史脉络。",
+    moral: "读史要明始终",
+    animation: "history-study",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "自羲农，至黄帝",
+    pinyin: "zi xi nong, zhi huang di",
+    story: "从伏羲、神农到黄帝，是传说中的上古时代。古人用这些人物讲述文明起源，如结网、农耕、医药和制度。",
+    moral: "三皇开文明之始",
+    animation: "ancient-rulers",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "号三皇，居上世",
+    pinyin: "hao san huang, ju shang shi",
+    story: "伏羲、神农、黄帝常被称为三皇，位于很早的上古时期。它们承载的是古人对文明起点的记忆。",
+    moral: "三皇居上古",
+    animation: "ancient-rulers",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "唐有虞，号二帝",
+    pinyin: "tang you yu, hao er di",
+    story: "唐尧和虞舜合称二帝。传说他们以德治天下，重视贤能，不把天下当作私产。",
+    moral: "尧舜合称二帝",
+    animation: "ancient-rulers",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "相揖逊，称盛世",
+    pinyin: "xiang yi xun, cheng sheng shi",
+    story: "尧把帝位禅让给舜，舜又选贤任能。古人把这种谦让和贤德治理称为盛世，提醒后人重德不重私利。",
+    moral: "禅让体现贤德",
+    animation: "ancient-rulers",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
   // ========== 第七部分：历史朝代 ==========
   {
     verse: "夏有禹，商有汤",
@@ -449,13 +854,31 @@ const threeCharClassic = [
     accentColor: "#4E342E"
   },
   {
-    verse: "周武王，称三王",
-    pinyin: "zhōu wǔ wáng, chēng sān wáng",
-    story: "周武王灭了商朝，建立了周朝。大禹、商汤、周武王这三位贤明的君主合称为三王。他们都有一个共同点：爱护百姓、任用贤人、以德治国，所以得到了天下人的拥护。",
+    verse: "周文武，称三王",
+    pinyin: "zhōu wén wǔ, chēng sān wáng",
+    story: "周文王奠定周朝基础，周武王灭商建立周朝。大禹、商汤、周文王和周武王代表古代贤明君主，其中周文王、周武王合称文武。他们都有一个共同点：爱护百姓、任用贤人、以德治国，所以得到了天下人的拥护。",
     moral: "三王都是贤明君主",
     animation: "three-kings",
     bgColor: "#CFD8DC",
     accentColor: "#37474F"
+  },
+  {
+    verse: "夏传子，家天下",
+    pinyin: "xia chuan zi, jia tian xia",
+    story: "大禹之后，启继承了王位，夏朝从禅让变成世袭。天下像家族产业一样传给子孙，这就是家天下的开始。",
+    moral: "夏朝开始家天下",
+    animation: "xia-dynasty",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "四百载，迁夏社",
+    pinyin: "si bai zai, qian xia she",
+    story: "夏朝大约延续四百年，后来国运衰败，被商汤取代。历史告诉我们，国家要长久，不能只靠血统，更要靠德政。",
+    moral: "夏朝四百年后衰亡",
+    animation: "xia-dynasty",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   {
     verse: "汤伐夏，国号商",
@@ -492,6 +915,24 @@ const threeCharClassic = [
     animation: "zhou-long",
     bgColor: "#D1C4E9",
     accentColor: "#4527A0"
+  },
+  {
+    verse: "周辙东，王纲坠",
+    pinyin: "zhou zhe dong, wang gang zhui",
+    story: "周平王东迁以后，周王室权威下降，诸侯不再像从前那样听命。周朝进入东周，天下秩序开始松动。",
+    moral: "东周王纲坠落",
+    animation: "east-zhou",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "逞干戈，尚游说",
+    pinyin: "cheng gan ge, shang you shui",
+    story: "诸侯之间常常打仗，谋士也四处游说君主。这个时代虽然纷乱，却也出现了许多思想家和治国主张。",
+    moral: "乱世中百家游说",
+    animation: "east-zhou",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   {
     verse: "始春秋，终战国",
@@ -584,6 +1025,60 @@ const threeCharClassic = [
     accentColor: "#00695C"
   },
   {
+    verse: "宋齐继，梁陈承",
+    pinyin: "song qi ji, liang chen cheng",
+    story: "两晋之后，南方先后有宋、齐、梁、陈四个朝代。它们延续时间不长，却在文学、书法和佛教文化上很活跃。",
+    moral: "宋齐梁陈相继",
+    animation: "southern-dynasties",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "为南朝，都金陵",
+    pinyin: "wei nan chao, du jin ling",
+    story: "宋齐梁陈都把都城设在金陵，也就是今天的南京一带，所以合称南朝。江南文化在这时不断发展。",
+    moral: "南朝都城在金陵",
+    animation: "southern-dynasties",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "北元魏，分东西",
+    pinyin: "bei yuan wei, fen dong xi",
+    story: "北方的北魏后来分裂成东魏和西魏。南北朝时期，南方和北方政权并立，民族交流也更加频繁。",
+    moral: "北魏分为东西魏",
+    animation: "northern-dynasties",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "宇文周，与高齐",
+    pinyin: "yu wen zhou, yu gao qi",
+    story: "西魏之后有宇文氏建立北周，东魏之后有高氏建立北齐。北周后来灭北齐，为隋朝统一打下基础。",
+    moral: "北周北齐并立",
+    animation: "northern-dynasties",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "迨至隋，一土宇",
+    pinyin: "dai zhi sui, yi tu yu",
+    story: "到了隋朝，南北长期分裂的局面终于结束，天下重新统一。统一后交通、制度和文化联系更紧密。",
+    moral: "隋朝重新统一天下",
+    animation: "sui-dynasty",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "不再传，失统绪",
+    pinyin: "bu zai chuan, shi tong xu",
+    story: "隋朝只传到第二代就灭亡了。隋炀帝劳民伤财，导致天下大乱，说明治理国家不能脱离百姓承受能力。",
+    moral: "隋朝二世而亡",
+    animation: "sui-dynasty",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
     verse: "唐高祖，起义师",
     pinyin: "táng gāo zǔ, qǐ yì shī",
     story: "隋朝之后，唐高祖李渊起兵反隋，建立了唐朝。唐朝是中国历史上最繁荣的朝代之一。唐太宗李世民虚心纳谏，重用魏征等贤臣，开创了贞观之治。",
@@ -620,6 +1115,24 @@ const threeCharClassic = [
     accentColor: "#37474F"
   },
   {
+    verse: "梁唐晋，及汉周",
+    pinyin: "liang tang jin, ji han zhou",
+    story: "唐亡以后，中原先后出现后梁、后唐、后晋、后汉、后周五个朝代。它们更替很快，社会仍不安定。",
+    moral: "五代相继更替",
+    animation: "five-dynasties",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "称五代，皆有由",
+    pinyin: "cheng wu dai, jie you you",
+    story: "这五个朝代合称五代。它们的兴亡都有原因，读历史要看清背后的民心、制度和用人得失。",
+    moral: "五代兴亡皆有原因",
+    animation: "five-dynasties",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
     verse: "炎宋兴，受周禅",
     pinyin: "yán sòng xīng, shòu zhōu shàn",
     story: "宋太祖赵匡胤黄袍加身，建立了宋朝。他原本是后周的大将军，被部下拥立为皇帝。宋朝重文轻武，文化高度发达，但军事较弱，最终被元朝所灭。",
@@ -636,6 +1149,240 @@ const threeCharClassic = [
     animation: "song-north-south",
     bgColor: "#C5E1A5",
     accentColor: "#558B2F"
+  },
+  {
+    verse: "辽与金，皆称帝",
+    pinyin: "liao yu jin, jie cheng di",
+    story: "宋朝时期，北方还有辽、金等政权，它们也自称皇帝。中国历史有时统一，有时并立，读史要看清时代格局。",
+    moral: "辽金与宋并立",
+    animation: "song-liao-jin",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "元灭金，绝宋世",
+    pinyin: "yuan mie jin, jue song shi",
+    story: "蒙古兴起后建立元朝，先灭金，后来又灭南宋。宋朝到此结束，中国进入元朝统一时期。",
+    moral: "元朝终结宋金格局",
+    animation: "yuan-dynasty",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "舆图广，超前代",
+    pinyin: "yu tu guang, chao qian dai",
+    story: "元朝疆域辽阔，交通和交流范围超过许多前代。广阔的版图也带来了复杂的治理难题。",
+    moral: "元朝版图辽阔",
+    animation: "yuan-dynasty",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "九十年，国祚废",
+    pinyin: "jiu shi nian, guo zuo fei",
+    story: "元朝统治约九十年后走向衰亡。朝代会兴起也会衰落，关键在于能否安定民生、善用制度。",
+    moral: "元朝约九十年而亡",
+    animation: "yuan-dynasty",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "太祖兴，国大明",
+    pinyin: "tai zu xing, guo da ming",
+    story: "朱元璋兴起，建立明朝，国号大明。他从艰难环境中起步，最终结束元末混乱局面。",
+    moral: "朱元璋建立明朝",
+    animation: "ming-dynasty",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "号洪武，都金陵",
+    pinyin: "hao hong wu, du jin ling",
+    story: "朱元璋年号洪武，最初定都金陵。明初重建制度、恢复生产，让社会逐步安定。",
+    moral: "洪武定都金陵",
+    animation: "ming-dynasty",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "迨成祖，迁燕京",
+    pinyin: "dai cheng zu, qian yan jing",
+    story: "到了明成祖朱棣，他把都城迁到燕京，也就是后来的北京。北京从此成为重要政治中心。",
+    moral: "明成祖迁都北京",
+    animation: "ming-dynasty",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "十六世，至崇祯",
+    pinyin: "shi liu shi, zhi chong zhen",
+    story: "明朝传了十六位皇帝，到崇祯帝时灭亡。一个朝代的长短，与政治清明和民生安定密切相关。",
+    moral: "明朝十六世至崇祯",
+    animation: "ming-dynasty",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "权阉肆，寇如林",
+    pinyin: "quan yan si, kou ru lin",
+    story: "明末宦官专权，流寇四起，国家内外问题不断累积。历史提醒人们，权力失控会伤害百姓和国家。",
+    moral: "明末内乱严重",
+    animation: "ming-fall",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "李闯出，神器焚",
+    pinyin: "li chuang chu, shen qi fen",
+    story: "李自成起兵攻入北京，明朝灭亡。所谓神器，是古人对皇权的说法，这里指国家政权结束。",
+    moral: "李自成攻入北京",
+    animation: "ming-fall",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "清世祖，膺景命",
+    pinyin: "qing shi zu, ying jing ming",
+    story: "清世祖顺治入主中原，清朝开始统治全国。新的朝代要稳定天下，也要面对融合和治理的考验。",
+    moral: "清世祖入主中原",
+    animation: "qing-dynasty",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "靖四方，克大定",
+    pinyin: "jing si fang, ke da ding",
+    story: "清初经过战争和治理，逐步平定四方。社会安定来之不易，需要制度、人才和民生共同支撑。",
+    moral: "清初平定四方",
+    animation: "qing-dynasty",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "由康雍，历乾嘉",
+    pinyin: "you kang yong, li qian jia",
+    story: "康熙、雍正、乾隆、嘉庆时期，清朝经历了较长的稳定发展。这个阶段常被称为清代盛世的一部分。",
+    moral: "康雍乾嘉时期",
+    animation: "qing-prosperity",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "民安富，治绩夸",
+    pinyin: "min an fu, zhi ji kua",
+    story: "在较安定的时期，百姓生活改善，国家治理也有成绩。但盛世也需要警惕问题积累，不能只看表面繁荣。",
+    moral: "安定富足也要自省",
+    animation: "qing-prosperity",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "道咸间，变乱起",
+    pinyin: "dao xian jian, bian luan qi",
+    story: "道光、咸丰年间，内忧外患增多，社会动荡开始加剧。中国近代的许多变化由此展开。",
+    moral: "道咸年间变乱起",
+    animation: "late-qing",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "始英法，扰都鄙",
+    pinyin: "shi ying fa, rao du bi",
+    story: "英法等西方国家侵扰中国，战争影响到都城和地方。近代史提醒我们，国家落后就容易受欺侮。",
+    moral: "英法侵扰中国",
+    animation: "late-qing",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "同光后，宣统弱",
+    pinyin: "tong guang hou, xuan tong ruo",
+    story: "同治、光绪以后，清朝虽然尝试改革，但积弊很深。到宣统时，皇权已经十分衰弱。",
+    moral: "晚清国势衰弱",
+    animation: "late-qing",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "传九帝，满清殁",
+    pinyin: "chuan jiu di, man qing mo",
+    story: "清朝从入关后的顺治到宣统，共经历九位皇帝，最终结束。中国两千多年的皇帝制度也走到末期。",
+    moral: "清朝九帝后灭亡",
+    animation: "late-qing",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "革命兴，废帝制",
+    pinyin: "ge ming xing, fei di zhi",
+    story: "辛亥革命兴起，推翻帝制。中国从皇帝统治转向共和制度，这是近代历史的大转折。",
+    moral: "辛亥革命废除帝制",
+    animation: "republic",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "立宪法，建民国",
+    pinyin: "li xian fa, jian min guo",
+    story: "建立民国意味着国家治理要依靠宪法和公共制度。它体现了近代中国追求共和与法治的努力。",
+    moral: "立宪建民国",
+    animation: "republic",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
+  },
+  {
+    verse: "古今史，全在兹",
+    pinyin: "gu jin shi, quan zai zi",
+    story: "从上古到近代的历史脉络，前面的句子已经大略说完。读史不是背朝代名，而是理解兴亡原因。",
+    moral: "古今历史大略在此",
+    animation: "history-summary",
+    bgColor: "#F1F8E9",
+    accentColor: "#558B2F"
+  },
+  {
+    verse: "载治乱，知兴衰",
+    pinyin: "zai zhi luan, zhi xing shuai",
+    story: "史书记载天下太平和战乱的原因，也能让人知道国家为什么兴盛、为什么衰败。",
+    moral: "读史知兴衰",
+    animation: "history-summary",
+    bgColor: "#E3F2FD",
+    accentColor: "#1565C0"
+  },
+  {
+    verse: "读史者，考实录",
+    pinyin: "du shi zhe, kao shi lu",
+    story: "读历史的人要查考真实记录，不能只听传闻。可靠证据越多，判断就越接近事实。",
+    moral: "读史要重证据",
+    animation: "history-method",
+    bgColor: "#FFFDE7",
+    accentColor: "#F57F17"
+  },
+  {
+    verse: "通古今，若亲目",
+    pinyin: "tong gu jin, ruo qin mu",
+    story: "把古今事情联系起来读，就像亲眼看见历史发生一样。历史能帮助我们理解今天，也能提醒未来。",
+    moral: "通古今如亲见",
+    animation: "history-method",
+    bgColor: "#ECEFF1",
+    accentColor: "#455A64"
+  },
+  {
+    verse: "口而诵，心而惟",
+    pinyin: "kou er song, xin er wei",
+    story: "读书不只是嘴上背诵，还要在心里思考。只会背不会想，知识就不能真正变成自己的本领。",
+    moral: "诵读还要思考",
+    animation: "study-method",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "朝于斯，夕于斯",
+    pinyin: "zhao yu si, xi yu si",
+    story: "早晨学习，晚上也学习，是说要长期坚持。每天进步一点，时间久了就会有大收获。",
+    moral: "朝夕坚持学习",
+    animation: "study-method",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   // ========== 第八部分：勤学故事 ==========
   {
@@ -655,6 +1402,42 @@ const threeCharClassic = [
     animation: "ancient-diligent",
     bgColor: "#FFE0B2",
     accentColor: "#EF6C00"
+  },
+  {
+    verse: "赵中令，读鲁论",
+    pinyin: "zhao zhong ling, du lu lun",
+    story: "赵普做了宰相后仍然认真读《论语》。他明白做官也要继续学习，用经典中的道理帮助处理国家大事。",
+    moral: "做官以后仍勤学",
+    animation: "zhao-pu",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "彼既仕，学且勤",
+    pinyin: "bi ji shi, xue qie qin",
+    story: "赵普已经有官职和地位，仍然勤奋读书。学习不是为了考试结束就停止，而是一生都要做的事。",
+    moral: "有成就也要继续学",
+    animation: "zhao-pu",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
+    verse: "披蒲编，削竹简",
+    pinyin: "pi pu bian, xue zhu jian",
+    story: "古代没有纸书时，有人把蒲草编起来、把竹片削平来写字读书。条件艰苦，却挡不住求学的心。",
+    moral: "无纸也要想办法读书",
+    animation: "hard-study",
+    bgColor: "#E8EAF6",
+    accentColor: "#303F9F"
+  },
+  {
+    verse: "彼无书，且知勉",
+    pinyin: "bi wu shu, qie zhi mian",
+    story: "那些人没有现成书本，仍然知道勉励自己学习。今天书本和工具更容易得到，更应该珍惜机会。",
+    moral: "条件不足仍要自勉",
+    animation: "hard-study",
+    bgColor: "#FCE4EC",
+    accentColor: "#C2185B"
   },
   {
     verse: "头悬梁，锥刺股",
@@ -693,6 +1476,24 @@ const threeCharClassic = [
     accentColor: "#7B1FA2"
   },
   {
+    verse: "如负薪，如挂角",
+    pinyin: "ru fu xin, ru gua jiao",
+    story: "朱买臣背柴时还读书，李密把书挂在牛角上边走边读。他们把零碎时间用起来，所以贫苦和忙碌没有拦住学习。",
+    moral: "再忙也能挤时间学习",
+    animation: "hard-study",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "身虽劳，犹苦卓",
+    pinyin: "shen sui lao, you ku zhuo",
+    story: "身体虽然劳累，他们仍然刻苦努力。学习最怕找借口，真正有志气的人会在困难里坚持。",
+    moral: "劳苦中仍坚持",
+    animation: "hard-study",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
     verse: "苏老泉，二十七",
     pinyin: "sū lǎo quán, èr shí qī",
     story: "宋朝有个叫苏洵的人（号老泉），二十七岁才开始发愤读书。他年轻时不爱读书，后来觉悟了，关起门来苦读，终于成了大学问家。他和两个儿子苏轼、苏辙合称三苏。",
@@ -709,6 +1510,24 @@ const threeCharClassic = [
     animation: "never-too-late",
     bgColor: "#F8BBD0",
     accentColor: "#AD1457"
+  },
+  {
+    verse: "彼既老，犹悔迟",
+    pinyin: "bi ji lao, you hui chi",
+    story: "苏洵年纪不小才开始发愤读书，还后悔自己醒悟得太晚。这个故事提醒孩子，学习越早开始越好。",
+    moral: "晚学会后悔迟",
+    animation: "su-xun",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "尔小生，宜早思",
+    pinyin: "er xiao sheng, yi zao si",
+    story: "小朋友现在正是学习的好时候，应当早早立志。把今天的时间用好，将来就少一些后悔。",
+    moral: "小学生要早立志",
+    animation: "su-xun",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   {
     verse: "若梁灏，八十二",
@@ -729,6 +1548,24 @@ const threeCharClassic = [
     accentColor: "#1565C0"
   },
   {
+    verse: "彼既成，众称异",
+    pinyin: "bi ji cheng, zhong cheng yi",
+    story: "梁灏年纪很大才考中状元，大家都称奇。成功有早有晚，坚持到底的人才有机会看到结果。",
+    moral: "晚成也值得敬佩",
+    animation: "liang-hao",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "尔小生，宜立志",
+    pinyin: "er xiao sheng, yi li zhi",
+    story: "孩子看到梁灏的故事，更应该早早立志。目标明确，学习才有方向；方向稳定，努力才不会散。",
+    moral: "从小立志更重要",
+    animation: "liang-hao",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
+  },
+  {
     verse: "莹八岁，能咏诗",
     pinyin: "yíng bā suì, néng yǒng shī",
     story: "北齐有个叫祖莹的孩子，八岁就能吟诗作文。他小时候非常爱读书，父母担心他累坏身体不让他看，他就偷偷在晚上点蜡烛读书。后来他成了著名的文学家。",
@@ -745,6 +1582,24 @@ const threeCharClassic = [
     animation: "limi-chess",
     bgColor: "#E1BEE7",
     accentColor: "#6A1B9A"
+  },
+  {
+    verse: "彼颖悟，人称奇",
+    pinyin: "bi ying wu, ren cheng qi",
+    story: "祖莹和李泌都很聪明，才华早早显露。聪明值得称赞，但更重要的是继续学习，不让天资白白浪费。",
+    moral: "聪明还要努力",
+    animation: "young-talents",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "尔幼学，当效之",
+    pinyin: "er you xue, dang xiao zhi",
+    story: "小朋友学习时，可以效法他们勤读善思。不是每个人都要做神童，但每个人都能每天进步。",
+    moral: "效法勤学的孩子",
+    animation: "young-talents",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   {
     verse: "蔡文姬，能辨琴",
@@ -799,6 +1654,24 @@ const threeCharClassic = [
     animation: "child-official",
     bgColor: "#DCEDC8",
     accentColor: "#558B2F"
+  },
+  {
+    verse: "彼虽幼，身已仕",
+    pinyin: "bi sui you, shen yi shi",
+    story: "刘晏虽然年纪小，却已经因为才学被任用。这个例子说明，真正的能力会让人承担责任。",
+    moral: "年幼有才也能任事",
+    animation: "liuyan-child",
+    bgColor: "#E0F2F1",
+    accentColor: "#00695C"
+  },
+  {
+    verse: "有为者，亦若是",
+    pinyin: "you wei zhe, yi ruo shi",
+    story: "有志向、有行动的人，也可以像这些勤学者一样有所作为。关键不是空想，而是从今天开始认真做。",
+    moral: "有志者要行动",
+    animation: "liuyan-child",
+    bgColor: "#FFF3E0",
+    accentColor: "#E65100"
   },
   // ========== 第九部分：劝学总结 ==========
   {
