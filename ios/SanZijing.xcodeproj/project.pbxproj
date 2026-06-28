@@ -19,6 +19,7 @@
 		01000000000000000000000A /* audio in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000202 /* audio */; };
 		01000000000000000000000B /* illustrations in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000203 /* illustrations */; };
 		01000000000000000000000C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000204 /* LaunchScreen.storyboard */; };
+		01000000000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000205 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +35,7 @@
 		010000000000000000000202 /* audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/audio; sourceTree = SOURCE_ROOT; };
 		010000000000000000000203 /* illustrations */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/illustrations; sourceTree = SOURCE_ROOT; };
 		010000000000000000000204 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		010000000000000000000205 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		010000000000000000000301 /* SanZijing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SanZijing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		010000000000000000000601 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -97,6 +99,7 @@
 			children = (
 				010000000000000000000201 /* ContentData.json */,
 				010000000000000000000204 /* LaunchScreen.storyboard */,
+				010000000000000000000205 /* Assets.xcassets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -162,6 +165,7 @@
 			files = (
 				010000000000000000000009 /* ContentData.json in Resources */,
 				01000000000000000000000C /* LaunchScreen.storyboard in Resources */,
+				01000000000000000000000D /* Assets.xcassets in Resources */,
 				01000000000000000000000A /* audio in Resources */,
 				01000000000000000000000B /* illustrations in Resources */,
 			);
@@ -240,7 +244,7 @@
 		010000000000000000000D01 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = "";
@@ -265,7 +269,7 @@
 		010000000000000000000D02 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = "";
