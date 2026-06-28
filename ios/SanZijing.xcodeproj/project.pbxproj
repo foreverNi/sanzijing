@@ -18,6 +18,7 @@
 		010000000000000000000009 /* ContentData.json in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000201 /* ContentData.json */; };
 		01000000000000000000000A /* audio in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000202 /* audio */; };
 		01000000000000000000000B /* illustrations in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000203 /* illustrations */; };
+		01000000000000000000000C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000204 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		010000000000000000000201 /* ContentData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ContentData.json; sourceTree = "<group>"; };
 		010000000000000000000202 /* audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/audio; sourceTree = SOURCE_ROOT; };
 		010000000000000000000203 /* illustrations */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/illustrations; sourceTree = SOURCE_ROOT; };
+		010000000000000000000204 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		010000000000000000000301 /* SanZijing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SanZijing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		010000000000000000000601 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -94,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				010000000000000000000201 /* ContentData.json */,
+				010000000000000000000204 /* LaunchScreen.storyboard */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -158,6 +161,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				010000000000000000000009 /* ContentData.json in Resources */,
+				01000000000000000000000C /* LaunchScreen.storyboard in Resources */,
 				01000000000000000000000A /* audio in Resources */,
 				01000000000000000000000B /* illustrations in Resources */,
 			);

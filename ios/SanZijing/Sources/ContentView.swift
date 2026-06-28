@@ -20,67 +20,99 @@ struct ContentView: View {
     private let pages = ContentRepository.pages
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if pages.isEmpty {
-                    ContentUnavailableView("内容加载失败", systemImage: "exclamationmark.triangle", description: Text("未能读取 ContentData.json"))
-                } else {
-                    pageContent
-                }
+        ZStack {
+            if pages.isEmpty {
+                ContentUnavailableView("内容加载失败", systemImage: "exclamationmark.triangle", description: Text("未能读取 ContentData.json"))
+            } else {
+                appContent
+            }
 
-                if locked {
-                    lockOverlay
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("三字经故事乐园")
-                        .font(.headline)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(recordingService.isRecording ? "停止" : "录制") {
-                        if recordingService.isRecording {
-                            recordingService.stop(keepFile: true)
-                        } else {
-                            stopAutoMode()
-                            showQuickRecording = true
-                        }
-                    }
-                    .disabled(locked && !recordingService.isRecording)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("设置") {
-                        showSettings = true
-                    }
-                    .disabled(locked || recordingService.isRecording)
-                }
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsSheet(
-                    selectedSource: $settings.selectedAudioSource,
-                    showRecordingManager: $showRecordingManager
-                )
-            }
-            .sheet(isPresented: $showQuickRecording) {
-                QuickRecordingSheet(
-                    page: currentPage,
-                    recordingService: recordingService
-                )
-            }
-            .sheet(isPresented: $showRecordingManager) {
-                RecordingManagerSheet(
-                    page: currentPage,
-                    recordingService: recordingService
-                )
-            }
-            .onAppear(perform: restoreProgress)
-            .onChange(of: scenePhase) { _, phase in
-                if phase != .active {
-                    saveProgress(wasPlaying: audioService.isPlaying)
-                }
+            if locked {
+                lockOverlay
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(.systemGroupedBackground))
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet(
+                selectedSource: $settings.selectedAudioSource,
+                showRecordingManager: $showRecordingManager
+            )
+            .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showQuickRecording) {
+            QuickRecordingSheet(
+                page: currentPage,
+                recordingService: recordingService
+            )
+        }
+        .sheet(isPresented: $showRecordingManager) {
+            RecordingManagerSheet(
+                page: currentPage,
+                recordingService: recordingService
+            )
+        }
+        .onAppear(perform: restoreProgress)
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                saveProgress(wasPlaying: audioService.isPlaying)
+            }
+        }
+    }
+
+    private var appContent: some View {
+        VStack(spacing: 0) {
+            topHeader
+            pageContent
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private var topHeader: some View {
+        HStack {
+            Button {
+                if recordingService.isRecording {
+                    recordingService.stop(keepFile: true)
+                } else {
+                    stopAutoMode()
+                    showQuickRecording = true
+                }
+            } label: {
+                Image(systemName: recordingService.isRecording ? "stop.fill" : "mic")
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.thinMaterial, in: Circle())
+            }
+            .foregroundStyle(recordingService.isRecording ? .red : .primary)
+            .accessibilityLabel(recordingService.isRecording ? "停止录音" : "录制")
+            .disabled(locked && !recordingService.isRecording)
+
+            Spacer()
+
+            Text("三字经故事乐园")
+                .font(.headline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+
+            Spacer()
+
+            Button {
+                showSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.thinMaterial, in: Circle())
+            }
+            .foregroundStyle(.primary)
+            .accessibilityLabel("设置")
+            .disabled(locked || recordingService.isRecording)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+        .background(Color(.systemGroupedBackground))
     }
 
     private var currentPage: ClassicPage {
@@ -89,27 +121,26 @@ struct ContentView: View {
 
     private var pageContent: some View {
         ScrollView {
-            VStack(spacing: 14) {
-                Text("第 \(currentPage.number) 页 / 共 \(pages.count) 页")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 8)
-
+            VStack(spacing: 12) {
                 verseCard
                 illustrationView
                 storySection
-                actionButtons
 
                 Text(statusText)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, minHeight: 20)
-                    .padding(.bottom, 24)
+                    .padding(.top, 2)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 142)
         }
         .background(Color(.systemGroupedBackground))
+        .safeAreaInset(edge: .bottom) {
+            bottomControls
+        }
         .gesture(
             DragGesture(minimumDistance: 64)
                 .onEnded { value in
@@ -121,22 +152,34 @@ struct ContentView: View {
     }
 
     private var verseCard: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
+            HStack {
+                Label("今日学习", systemImage: "book.closed")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color(argbHex: currentPage.accentColor))
+                Spacer()
+            }
+
             Text(currentPage.verse)
-                .font(.system(.largeTitle, design: .serif).weight(.bold))
+                .font(.system(size: 34, weight: .bold, design: .serif))
                 .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.72)
+                .minimumScaleFactor(0.76)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 2)
 
             Text(currentPage.pinyin)
-                .font(.body)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.82)
         }
         .frame(maxWidth: .infinity)
         .padding(18)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color(argbHex: currentPage.accentColor).opacity(0.25))
         )
     }
@@ -157,7 +200,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
         }
-        .frame(height: 180)
+        .frame(height: 194)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
@@ -168,48 +211,100 @@ struct ContentView: View {
     }
 
     private var storySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("故事解说")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Image(systemName: "text.book.closed")
+                    .foregroundStyle(Color(argbHex: currentPage.accentColor))
+                Text("故事解说")
+                    .font(.headline)
+                Spacer()
+            }
 
             Text(currentPage.story)
                 .font(.body)
                 .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.top, 2)
 
             Text("小小启示：\(currentPage.moral)")
-                .font(.body.weight(.semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(Color(.tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.top, 4)
         }
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(.separator).opacity(0.16))
+        )
     }
 
-    private var actionButtons: some View {
+    private var bottomControls: some View {
         VStack(spacing: 10) {
-            Button {
-                speakManualPage()
-            } label: {
-                Label("播放", systemImage: "play.fill")
-                    .frame(maxWidth: .infinity)
+            pageNavigationControl
+
+            HStack(spacing: 12) {
+                Button {
+                    speakManualPage()
+                } label: {
+                    Label("播放本页", systemImage: "play.fill")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(locked || recordingService.isRecording)
+
+                Button {
+                    autoMode ? stopAutoMode() : startAutoMode()
+                } label: {
+                    Label(autoMode ? "停止" : "自动播放", systemImage: autoMode ? "stop.fill" : "repeat")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .disabled(recordingService.isRecording || locked)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(locked || recordingService.isRecording)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(.regularMaterial)
+    }
+
+    private var pageNavigationControl: some View {
+        HStack(spacing: 12) {
+            Button {
+                changePage(-1)
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.callout.weight(.semibold))
+                    .frame(width: 34, height: 34)
+            }
+            .buttonStyle(.borderless)
+            .disabled(currentPageIndex == 0 || locked || recordingService.isRecording)
+            .accessibilityLabel("上一页")
+
+            Text("第 \(currentPage.number) / \(pages.count) 页")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
 
             Button {
-                autoMode ? stopAutoMode() : startAutoMode()
+                changePage(1)
             } label: {
-                Label(autoMode ? "停止自动播放" : "自动播放", systemImage: autoMode ? "stop.fill" : "repeat")
-                    .frame(maxWidth: .infinity)
+                Image(systemName: "chevron.right")
+                    .font(.callout.weight(.semibold))
+                    .frame(width: 34, height: 34)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .disabled(recordingService.isRecording || locked)
+            .buttonStyle(.borderless)
+            .disabled(currentPageIndex >= pages.count - 1 || locked || recordingService.isRecording)
+            .accessibilityLabel("下一页")
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var lockOverlay: some View {
