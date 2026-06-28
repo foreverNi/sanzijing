@@ -6,3 +6,5 @@ build/
 *.env
 docs/.env
 tmp/
+__pycache__/
+*.pyc

@@ -2,26 +2,25 @@
 """Generate bundled San Zi Jing WAV audio with the Doubao TTS streaming API."""
 
 import argparse
-import base64
 import json
 import os
 import re
 import shutil
 import sys
 import time
-import urllib.error
-import urllib.request
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-
-API_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
-DEFAULT_MODEL = "seed-tts-2.0-standard"
-DEFAULT_RESOURCE_ID = "seed-tts-2.0"
-DEFAULT_SAMPLE_RATE = 24000
-SUCCESS_CODES = {0, 20000000}
+from doubao_tts_api import (
+    DEFAULT_MODEL,
+    DEFAULT_RESOURCE_ID,
+    DEFAULT_SAMPLE_RATE,
+    DoubaoTTSError,
+    config_from_env,
+    synthesize_to_file,
+    validate_wav,
+)
 
 
 @dataclass
@@ -64,29 +63,14 @@ def load_pages(content_path: Path) -> list[Page]:
     return pages
 
 
-def load_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
-    if not path.exists():
-        return values
-    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key:
-            values[key] = value
-    return values
-
-
 def load_credentials(root: Path) -> dict[str, str]:
-    root_env = load_env_file(root / ".env")
-    docs_env = load_env_file(root / "docs" / ".env")
+    from doubao_tts_api import load_env_file
 
     def first_value(*values: Optional[str]) -> str:
         return next((value for value in values if value), "")
 
+    root_env = load_env_file(root / ".env")
+    docs_env = load_env_file(root / "docs" / ".env")
     credentials = {
         "api_key": first_value(
             os.environ.get("DOUBAO_API_KEY"),
@@ -147,80 +131,6 @@ def output_name(kind: str, page_number: int) -> str:
     return f"{kind}_{page_number:03d}.wav"
 
 
-def validate_wav(path: Path) -> None:
-    if not path.exists() or path.stat().st_size <= 44:
-        raise RuntimeError(f"Invalid WAV file size: {path}")
-    with path.open("rb") as handle:
-        header = handle.read(12)
-    if len(header) < 12 or not header.startswith(b"RIFF") or header[8:12] != b"WAVE":
-        raise RuntimeError(f"Invalid WAV header: {path}")
-
-
-def parse_stream_response(body: bytes) -> bytes:
-    decoder = json.JSONDecoder()
-    text = body.decode("utf-8")
-    audio_parts: list[bytes] = []
-    index = 0
-    while index < len(text):
-        while index < len(text) and text[index].isspace():
-            index += 1
-        if index >= len(text):
-            break
-        result, next_index = decoder.raw_decode(text, index)
-        index = next_index
-        code = result.get("code", 0)
-        if code is not None and code not in SUCCESS_CODES:
-            raise RuntimeError(f"Doubao API returned code={code} message={result.get('message')}")
-        if result.get("data"):
-            audio_parts.append(base64.b64decode(result["data"]))
-    if not audio_parts:
-        raise RuntimeError("Doubao API response did not include any audio data chunks")
-    return b"".join(audio_parts)
-
-
-def doubao_request(credentials: dict[str, str], text: str, timeout: int, model: str, resource_id: str, speaker: str) -> bytes:
-    payload = {
-        "req_params": {
-            "text": text,
-            "model": model,
-            "speaker": speaker,
-            "audio_params": {
-                "format": "wav",
-                "sample_rate": DEFAULT_SAMPLE_RATE,
-                "speech_rate": 0,
-                "loudness_rate": 0,
-            },
-        },
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "X-Api-Resource-Id": resource_id,
-        "X-Api-Request-Id": str(uuid.uuid4()),
-    }
-    if credentials["api_key"]:
-        headers["X-Api-Key"] = credentials["api_key"]
-    else:
-        headers["X-Api-App-Id"] = credentials["app_id"]
-        headers["X-Api-Access-Key"] = credentials["access_key"]
-    request = urllib.request.Request(
-        API_URL,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            body = response.read()
-            content_type = response.headers.get("Content-Type", "")
-    except urllib.error.HTTPError as error:
-        body = error.read().decode("utf-8", errors="replace")
-        logid = error.headers.get("X-Tt-Logid") or error.headers.get("X-Tt-LogId") or ""
-        raise RuntimeError(f"HTTP {error.code} from Doubao API; logid={logid}; body={body[:500]}") from error
-    if content_type.startswith("audio/"):
-        return body
-    return parse_stream_response(body)
-
-
 def generate_job(credentials: dict[str, str], kind: str, page_number: int, text: str, target: Path, args: argparse.Namespace) -> None:
     if target.exists() and target.stat().st_size > 44 and not args.force:
         validate_wav(target)
@@ -229,17 +139,23 @@ def generate_job(credentials: dict[str, str], kind: str, page_number: int, text:
     last_error: Exception | None = None
     for attempt in range(1, args.retries + 2):
         try:
-            audio = doubao_request(credentials, text, args.timeout, args.model, args.resource_id, args.speaker)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            tmp_path = target.with_suffix(".tmp")
-            tmp_path.write_bytes(audio)
-            validate_wav(tmp_path)
-            tmp_path.replace(target)
+            config = config_from_env(
+                repo_root() / ".env",
+                api_key=credentials["api_key"],
+                speaker=args.speaker,
+                model=args.model,
+                resource_id=args.resource_id,
+                audio_format="wav",
+                sample_rate=DEFAULT_SAMPLE_RATE,
+                timeout=args.timeout,
+            )
+            synthesize_to_file(text, target, config)
+            validate_wav(target)
             print(f"generated {target.name} ({target.stat().st_size} bytes)")
             if args.sleep > 0:
                 time.sleep(args.sleep)
             return
-        except (urllib.error.URLError, TimeoutError, RuntimeError, json.JSONDecodeError) as error:
+        except (OSError, TimeoutError, RuntimeError, json.JSONDecodeError, DoubaoTTSError) as error:
             last_error = error
             if attempt <= args.retries:
                 wait_seconds = min(30, 2 * attempt)
