@@ -7,13 +7,15 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioAttributes;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Bundle;
@@ -34,8 +36,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Locale;
 
@@ -78,6 +82,7 @@ public final class MainActivity extends Activity {
     private File pendingSpeechFile;
     private File currentRecordingFile;
     private MediaPlayer currentSpeechPlayer;
+    private BundledWavPlayer currentBundledPlayer;
     private MediaRecorder mediaRecorder;
     private AlertDialog recordingDialog;
     private Runnable pendingAutoRunnable;
@@ -439,12 +444,8 @@ public final class MainActivity extends Activity {
 
     private void savePlaybackProgress(boolean wasPlaying) {
         int positionMs = 0;
-        if (wasPlaying && currentSpeechPlayer != null) {
-            try {
-                positionMs = Math.max(0, currentSpeechPlayer.getCurrentPosition());
-            } catch (IllegalStateException ignored) {
-                positionMs = 0;
-            }
+        if (wasPlaying) {
+            positionMs = currentPlaybackPositionMs();
         }
         preferences.edit()
             .putInt(PREF_PROGRESS_PAGE, currentPageIndex)
@@ -456,6 +457,9 @@ public final class MainActivity extends Activity {
     }
 
     private boolean isSpeechPlayerPlaying() {
+        if (currentBundledPlayer != null) {
+            return currentBundledPlayer.isPlaying();
+        }
         if (currentSpeechPlayer == null) {
             return false;
         }
@@ -464,6 +468,20 @@ public final class MainActivity extends Activity {
         } catch (IllegalStateException ignored) {
             return false;
         }
+    }
+
+    private int currentPlaybackPositionMs() {
+        if (currentBundledPlayer != null) {
+            return currentBundledPlayer.getCurrentPositionMs();
+        }
+        if (currentSpeechPlayer != null) {
+            try {
+                return Math.max(0, currentSpeechPlayer.getCurrentPosition());
+            } catch (IllegalStateException ignored) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     private void startAutoMode() {
@@ -651,34 +669,28 @@ public final class MainActivity extends Activity {
         releaseSpeechPlayer();
         clearSpeechTimeout();
         String audioPath = "audio/" + kind + "_" + String.format(Locale.US, "%03d", currentPageIndex + 1) + ".wav";
-        try (AssetFileDescriptor descriptor = getAssets().openFd(audioPath)) {
-            currentSpeechPlayer = new MediaPlayer();
-            currentSpeechPlayer.setAudioAttributes(new AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .build());
-            currentSpeechPlayer.setDataSource(
-                descriptor.getFileDescriptor(),
-                descriptor.getStartOffset(),
-                descriptor.getLength()
-            );
-            currentSpeechPlayer.setOnCompletionListener(player -> {
-                releaseSpeechPlayer();
-                handleSpeechDone(utteranceId);
-            });
-            currentSpeechPlayer.setOnErrorListener((player, what, extra) -> {
-                releaseSpeechPlayer();
-                statusText.setText("内置语音播放失败：" + what + "/" + extra);
-                stopAutoMode();
-                return true;
-            });
-            currentSpeechPlayer.prepare();
-            seekSpeechPlayer(startPositionMs);
-            currentSpeechPlayer.start();
+        try {
+            currentBundledPlayer = BundledWavPlayer.load(getAssets(), audioPath, handler,
+                () -> {
+                    releaseSpeechPlayer();
+                    handleSpeechDone(utteranceId);
+                },
+                message -> {
+                    releaseSpeechPlayer();
+                    statusText.setText(message);
+                    stopAutoMode();
+                });
+            currentBundledPlayer.start(startPositionMs);
             statusText.setText("正在播放内置语音...");
             ttsSettingsButton.setVisibility(View.GONE);
             return true;
         } catch (IOException error) {
+            releaseSpeechPlayer();
+            statusText.setText("内置语音文件缺失或无法读取：" + audioPath);
+            return false;
+        } catch (RuntimeException error) {
+            releaseSpeechPlayer();
+            statusText.setText("内置语音播放异常：" + error.getClass().getSimpleName());
             return false;
         }
     }
@@ -833,6 +845,10 @@ public final class MainActivity extends Activity {
     }
 
     private void releaseSpeechPlayer() {
+        if (currentBundledPlayer != null) {
+            currentBundledPlayer.release();
+            currentBundledPlayer = null;
+        }
         if (currentSpeechPlayer != null) {
             currentSpeechPlayer.release();
             currentSpeechPlayer = null;
@@ -1540,6 +1556,208 @@ public final class MainActivity extends Activity {
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private static final class BundledWavPlayer {
+        private final byte[] wavData;
+        private final int dataOffset;
+        private final int dataSize;
+        private final int sampleRate;
+        private final int channelCount;
+        private final int blockAlign;
+        private final Handler handler;
+        private final Runnable onComplete;
+        private final PlaybackErrorCallback onError;
+        private volatile boolean released;
+        private volatile boolean playing;
+        private volatile int currentByteOffset;
+        private AudioTrack audioTrack;
+
+        private interface PlaybackErrorCallback {
+            void onError(String message);
+        }
+
+        static BundledWavPlayer load(AssetManager assets, String path, Handler handler,
+                                     Runnable onComplete, PlaybackErrorCallback onError) throws IOException {
+            byte[] wavData;
+            try (InputStream input = assets.open(path);
+                 ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[32 * 1024];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, read);
+                }
+                wavData = output.toByteArray();
+            }
+            return parse(wavData, handler, onComplete, onError);
+        }
+
+        private static BundledWavPlayer parse(byte[] wavData, Handler handler,
+                                              Runnable onComplete, PlaybackErrorCallback onError) throws IOException {
+            if (wavData.length < 44 || !chunkEquals(wavData, 0, "RIFF") || !chunkEquals(wavData, 8, "WAVE")) {
+                throw new IOException("Unsupported WAV header");
+            }
+            int position = 12;
+            int audioFormat = -1;
+            int channelCount = 0;
+            int sampleRate = 0;
+            int blockAlign = 0;
+            int bitsPerSample = 0;
+            int dataOffset = -1;
+            int dataSize = 0;
+            while (position + 8 <= wavData.length) {
+                long chunkSize = littleEndianUnsignedInt(wavData, position + 4);
+                int chunkDataOffset = position + 8;
+                if (chunkSize == 0xFFFFFFFFL && chunkEquals(wavData, position, "data")) {
+                    chunkSize = wavData.length - chunkDataOffset;
+                }
+                if (chunkSize < 0 || chunkSize > Integer.MAX_VALUE || chunkDataOffset + chunkSize > wavData.length) {
+                    throw new IOException("Invalid WAV chunk");
+                }
+                int currentChunkSize = (int) chunkSize;
+                if (chunkEquals(wavData, position, "fmt ")) {
+                    if (currentChunkSize < 16) {
+                        throw new IOException("Invalid WAV fmt chunk");
+                    }
+                    audioFormat = littleEndianShort(wavData, chunkDataOffset);
+                    channelCount = littleEndianShort(wavData, chunkDataOffset + 2);
+                    sampleRate = littleEndianInt(wavData, chunkDataOffset + 4);
+                    blockAlign = littleEndianShort(wavData, chunkDataOffset + 12);
+                    bitsPerSample = littleEndianShort(wavData, chunkDataOffset + 14);
+                } else if (chunkEquals(wavData, position, "data")) {
+                    dataOffset = chunkDataOffset;
+                    dataSize = currentChunkSize;
+                }
+                position = chunkDataOffset + currentChunkSize + (currentChunkSize & 1);
+            }
+            if (audioFormat != 1 || bitsPerSample != 16 || sampleRate <= 0 || blockAlign <= 0
+                || (channelCount != 1 && channelCount != 2) || dataOffset < 0 || dataSize <= 0) {
+                throw new IOException("Unsupported WAV format");
+            }
+            return new BundledWavPlayer(wavData, dataOffset, dataSize, sampleRate, channelCount,
+                blockAlign, handler, onComplete, onError);
+        }
+
+        private BundledWavPlayer(byte[] wavData, int dataOffset, int dataSize, int sampleRate,
+                                 int channelCount, int blockAlign, Handler handler,
+                                 Runnable onComplete, PlaybackErrorCallback onError) {
+            this.wavData = wavData;
+            this.dataOffset = dataOffset;
+            this.dataSize = dataSize;
+            this.sampleRate = sampleRate;
+            this.channelCount = channelCount;
+            this.blockAlign = blockAlign;
+            this.handler = handler;
+            this.onComplete = onComplete;
+            this.onError = onError;
+            this.currentByteOffset = dataOffset;
+        }
+
+        void start(int startPositionMs) {
+            int channelMask = channelCount == 1
+                ? AudioFormat.CHANNEL_OUT_MONO
+                : AudioFormat.CHANNEL_OUT_STEREO;
+            audioTrack = new AudioTrack.Builder()
+                .setAudioAttributes(new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .build())
+                .setAudioFormat(new AudioFormat.Builder()
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(channelMask)
+                    .build())
+                .setBufferSizeInBytes(dataSize)
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .build();
+            try {
+                int written = audioTrack.write(wavData, dataOffset, dataSize, AudioTrack.WRITE_BLOCKING);
+                if (written != dataSize) {
+                    throw new IllegalStateException("AudioTrack write incomplete: " + written);
+                }
+                int totalFrames = dataSize / blockAlign;
+                int startFrame = Math.min(Math.max(0, (Math.max(0, startPositionMs) * sampleRate) / 1000), totalFrames);
+                audioTrack.setNotificationMarkerPosition(totalFrames);
+                audioTrack.setPlaybackHeadPosition(startFrame);
+                audioTrack.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
+                    @Override
+                    public void onMarkerReached(AudioTrack track) {
+                        playing = false;
+                        handler.post(() -> {
+                            if (!released) {
+                                releaseTrack();
+                                onComplete.run();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onPeriodicNotification(AudioTrack track) {
+                    }
+                }, handler);
+                currentByteOffset = dataOffset + startFrame * blockAlign;
+                playing = true;
+                audioTrack.play();
+            } catch (RuntimeException error) {
+                playing = false;
+                if (!released) {
+                    handler.post(() -> onError.onError("内置语音播放失败：" + error.getClass().getSimpleName()));
+                }
+            }
+        }
+
+        boolean isPlaying() {
+            return playing;
+        }
+
+        int getCurrentPositionMs() {
+            if (audioTrack != null) {
+                return (int) ((audioTrack.getPlaybackHeadPosition() * 1000L) / sampleRate);
+            }
+            int bytesPlayed = Math.max(0, currentByteOffset - dataOffset);
+            return (int) ((bytesPlayed * 1000L) / (sampleRate * blockAlign));
+        }
+
+        void release() {
+            released = true;
+            playing = false;
+            releaseTrack();
+        }
+
+        private void releaseTrack() {
+            if (audioTrack != null) {
+                try {
+                    audioTrack.pause();
+                } catch (RuntimeException ignored) {
+                    // The track may already be stopped by the platform callback.
+                }
+                audioTrack.release();
+                audioTrack = null;
+            }
+        }
+
+        private static boolean chunkEquals(byte[] data, int offset, String value) {
+            return offset + value.length() <= data.length
+                && data[offset] == (byte) value.charAt(0)
+                && data[offset + 1] == (byte) value.charAt(1)
+                && data[offset + 2] == (byte) value.charAt(2)
+                && data[offset + 3] == (byte) value.charAt(3);
+        }
+
+        private static int littleEndianShort(byte[] data, int offset) {
+            return (data[offset] & 0xFF) | ((data[offset + 1] & 0xFF) << 8);
+        }
+
+        private static int littleEndianInt(byte[] data, int offset) {
+            return (data[offset] & 0xFF)
+                | ((data[offset + 1] & 0xFF) << 8)
+                | ((data[offset + 2] & 0xFF) << 16)
+                | ((data[offset + 3] & 0xFF) << 24);
+        }
+
+        private static long littleEndianUnsignedInt(byte[] data, int offset) {
+            return littleEndianInt(data, offset) & 0xFFFFFFFFL;
+        }
     }
 
     private static final class UiTokens {
