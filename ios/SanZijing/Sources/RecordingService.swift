@@ -28,13 +28,13 @@ final class RecordingService: NSObject, ObservableObject {
         guard source != .builtin else {
             return
         }
-        requestPermission { [weak self] granted in
-            guard let self else { return }
+        Task {
+            let granted = await requestPermission()
             if granted {
-                self.beginRecording(source: source, kind: kind, pageNumber: pageNumber)
+                beginRecording(source: source, kind: kind, pageNumber: pageNumber)
             } else {
-                self.statusText = "未授权麦克风，无法录音。"
-                AppLogger.error(self.statusText)
+                statusText = "未授权麦克风，无法录音。"
+                AppLogger.error(statusText)
             }
         }
     }
@@ -86,20 +86,20 @@ final class RecordingService: NSObject, ObservableObject {
         }
     }
 
-    private func requestPermission(_ completion: @escaping (Bool) -> Void) {
-        switch AVAudioSession.sharedInstance().recordPermission {
+    private func requestPermission() async -> Bool {
+        switch AVAudioApplication.shared.recordPermission {
         case .granted:
-            completion(true)
+            return true
         case .denied:
-            completion(false)
+            return false
         case .undetermined:
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                Task { @MainActor in
-                    completion(granted)
+            return await withCheckedContinuation { continuation in
+                AVAudioApplication.requestRecordPermission { granted in
+                    continuation.resume(returning: granted)
                 }
             }
         @unknown default:
-            completion(false)
+            return false
         }
     }
 
