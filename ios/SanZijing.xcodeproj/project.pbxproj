@@ -1,0 +1,310 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		010000000000000000000001 /* SanZijingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000101 /* SanZijingApp.swift */; };
+		010000000000000000000002 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000102 /* AppLogger.swift */; };
+		010000000000000000000003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000103 /* Models.swift */; };
+		010000000000000000000004 /* ContentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000104 /* ContentRepository.swift */; };
+		010000000000000000000005 /* PlaybackSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000105 /* PlaybackSettings.swift */; };
+		010000000000000000000006 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000106 /* AudioService.swift */; };
+		010000000000000000000007 /* RecordingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000107 /* RecordingService.swift */; };
+		010000000000000000000008 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000108 /* ContentView.swift */; };
+		010000000000000000000009 /* ContentData.json in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000201 /* ContentData.json */; };
+		01000000000000000000000A /* audio in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000202 /* audio */; };
+		01000000000000000000000B /* illustrations in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000203 /* illustrations */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		010000000000000000000101 /* SanZijingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanZijingApp.swift; sourceTree = "<group>"; };
+		010000000000000000000102 /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		010000000000000000000103 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		010000000000000000000104 /* ContentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentRepository.swift; sourceTree = "<group>"; };
+		010000000000000000000105 /* PlaybackSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSettings.swift; sourceTree = "<group>"; };
+		010000000000000000000106 /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
+		010000000000000000000107 /* RecordingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingService.swift; sourceTree = "<group>"; };
+		010000000000000000000108 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		010000000000000000000201 /* ContentData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ContentData.json; sourceTree = "<group>"; };
+		010000000000000000000202 /* audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/audio; sourceTree = SOURCE_ROOT; };
+		010000000000000000000203 /* illustrations */ = {isa = PBXFileReference; lastKnownFileType = folder; path = ../android/app/src/main/assets/illustrations; sourceTree = SOURCE_ROOT; };
+		010000000000000000000301 /* SanZijing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SanZijing.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		010000000000000000000601 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		010000000000000000000401 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		010000000000000000000501 = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000502 /* SanZijing */,
+				010000000000000000000503 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		010000000000000000000502 /* SanZijing */ = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000504 /* Sources */,
+				010000000000000000000505 /* Resources */,
+				010000000000000000000202 /* audio */,
+				010000000000000000000203 /* illustrations */,
+				010000000000000000000601 /* Info.plist */,
+			);
+			path = SanZijing;
+			sourceTree = "<group>";
+		};
+		010000000000000000000503 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000301 /* SanZijing.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		010000000000000000000504 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000101 /* SanZijingApp.swift */,
+				010000000000000000000102 /* AppLogger.swift */,
+				010000000000000000000103 /* Models.swift */,
+				010000000000000000000104 /* ContentRepository.swift */,
+				010000000000000000000105 /* PlaybackSettings.swift */,
+				010000000000000000000106 /* AudioService.swift */,
+				010000000000000000000107 /* RecordingService.swift */,
+				010000000000000000000108 /* ContentView.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		010000000000000000000505 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000201 /* ContentData.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		010000000000000000000701 /* SanZijing */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 010000000000000000000B01 /* Build configuration list for PBXNativeTarget "SanZijing" */;
+			buildPhases = (
+				010000000000000000000801 /* Sources */,
+				010000000000000000000401 /* Frameworks */,
+				010000000000000000000901 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SanZijing;
+			productName = SanZijing;
+			productReference = 010000000000000000000301 /* SanZijing.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		010000000000000000000A01 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					010000000000000000000701 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 010000000000000000000B02 /* Build configuration list for PBXProject "SanZijing" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh_CN,
+				en,
+				Base,
+			);
+			mainGroup = 010000000000000000000501;
+			productRefGroup = 010000000000000000000503 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				010000000000000000000701 /* SanZijing */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		010000000000000000000901 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010000000000000000000009 /* ContentData.json in Resources */,
+				01000000000000000000000A /* audio in Resources */,
+				01000000000000000000000B /* illustrations in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		010000000000000000000801 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				010000000000000000000001 /* SanZijingApp.swift in Sources */,
+				010000000000000000000002 /* AppLogger.swift in Sources */,
+				010000000000000000000003 /* Models.swift in Sources */,
+				010000000000000000000004 /* ContentRepository.swift in Sources */,
+				010000000000000000000005 /* PlaybackSettings.swift in Sources */,
+				010000000000000000000006 /* AudioService.swift in Sources */,
+				010000000000000000000007 /* RecordingService.swift in Sources */,
+				010000000000000000000008 /* ContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		010000000000000000000C01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		010000000000000000000C02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		010000000000000000000D01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 13;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SanZijing/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foreverni.sanzijing;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		010000000000000000000D02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 13;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SanZijing/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.12;
+				PRODUCT_BUNDLE_IDENTIFIER = com.foreverni.sanzijing;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		010000000000000000000B01 /* Build configuration list for PBXNativeTarget "SanZijing" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				010000000000000000000D01 /* Debug */,
+				010000000000000000000D02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		010000000000000000000B02 /* Build configuration list for PBXProject "SanZijing" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				010000000000000000000C01 /* Debug */,
+				010000000000000000000C02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 010000000000000000000A01 /* Project object */;
+}
