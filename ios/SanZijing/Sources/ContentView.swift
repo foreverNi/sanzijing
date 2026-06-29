@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showQuickRecording = false
     @State private var showRecordingManager = false
     @State private var pendingAutoTask: Task<Void, Never>?
+    @State private var lastLoggedLayoutKey = ""
 
     private let pages = ContentRepository.pages
 
@@ -120,24 +121,35 @@ struct ContentView: View {
     }
 
     private var pageContent: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                verseCard
-                illustrationView
-                storySection
+        GeometryReader { proxy in
+            let metrics = PageLayoutMetrics(
+                size: proxy.size,
+                isPad: UIDevice.current.userInterfaceIdiom == .pad
+            )
 
-                Text(statusText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, minHeight: 20)
-                    .padding(.top, 2)
+            ScrollView {
+                Group {
+                    if metrics.usesWideLayout {
+                        widePageLayout(metrics: metrics)
+                    } else {
+                        compactPageLayout(metrics: metrics)
+                    }
+                }
+                .frame(maxWidth: metrics.maxContentWidth)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, metrics.horizontalPadding)
+                .padding(.top, metrics.topPadding)
+                .padding(.bottom, metrics.bottomPadding)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 142)
+            .scrollIndicators(.hidden)
+            .background(Color(.systemGroupedBackground))
+            .onAppear {
+                logLayoutIfNeeded(metrics)
+            }
+            .onChange(of: metrics.logKey) { _, _ in
+                logLayoutIfNeeded(metrics)
+            }
         }
-        .background(Color(.systemGroupedBackground))
         .safeAreaInset(edge: .bottom) {
             bottomControls
         }
@@ -151,17 +163,42 @@ struct ContentView: View {
         )
     }
 
-    private var verseCard: some View {
+    private func compactPageLayout(metrics: PageLayoutMetrics) -> some View {
+        VStack(spacing: metrics.sectionSpacing) {
+            verseCard(metrics: metrics)
+            illustrationView(metrics: metrics)
+            storySection(metrics: metrics)
+            statusView
+        }
+        .frame(minHeight: metrics.contentMinHeight, alignment: .top)
+    }
+
+    private func widePageLayout(metrics: PageLayoutMetrics) -> some View {
+        HStack(alignment: .top, spacing: metrics.sectionSpacing) {
+            VStack(spacing: metrics.sectionSpacing) {
+                verseCard(metrics: metrics)
+                storySection(metrics: metrics)
+                statusView
+            }
+            .frame(width: metrics.textColumnWidth)
+
+            illustrationView(metrics: metrics)
+                .frame(width: metrics.imageColumnWidth)
+        }
+        .frame(minHeight: metrics.contentMinHeight, alignment: .center)
+    }
+
+    private func verseCard(metrics: PageLayoutMetrics) -> some View {
         VStack(spacing: 10) {
             HStack {
                 Label("今日学习", systemImage: "book.closed")
-                    .font(.subheadline.weight(.semibold))
+                    .font(metrics.captionFont.weight(.semibold))
                     .foregroundStyle(Color(argbHex: currentPage.accentColor))
                 Spacer()
             }
 
             Text(currentPage.verse)
-                .font(.system(size: 34, weight: .bold, design: .serif))
+                .font(.system(size: metrics.verseFontSize, weight: .bold, design: .serif))
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.76)
                 .lineLimit(2)
@@ -169,14 +206,14 @@ struct ContentView: View {
                 .padding(.top, 2)
 
             Text(currentPage.pinyin)
-                .font(.callout)
+                .font(metrics.pinyinFont)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .minimumScaleFactor(0.82)
         }
         .frame(maxWidth: .infinity)
-        .padding(18)
+        .padding(metrics.cardPadding)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -184,7 +221,7 @@ struct ContentView: View {
         )
     }
 
-    private var illustrationView: some View {
+    private func illustrationView(metrics: PageLayoutMetrics) -> some View {
         Group {
             if let image = pageImage(currentPage.number) {
                 Image(uiImage: image)
@@ -200,7 +237,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
         }
-        .frame(height: 194)
+        .frame(height: metrics.illustrationHeight)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
@@ -210,34 +247,43 @@ struct ContentView: View {
         .background(Color(argbHex: currentPage.backgroundColor), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private var storySection: some View {
+    private func storySection(metrics: PageLayoutMetrics) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 7) {
                 Image(systemName: "text.book.closed")
                     .foregroundStyle(Color(argbHex: currentPage.accentColor))
                 Text("故事解说")
-                    .font(.headline)
+                    .font(metrics.headlineFont)
                 Spacer()
             }
 
             Text(currentPage.story)
-                .font(.body)
-                .lineSpacing(3)
+                .font(metrics.storyFont)
+                .lineSpacing(metrics.lineSpacing)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 2)
 
             Text("小小启示：\(currentPage.moral)")
-                .font(.callout.weight(.semibold))
+                .font(metrics.moralFont.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 4)
         }
-        .padding(16)
+        .padding(metrics.cardPadding)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color(.separator).opacity(0.16))
         )
+    }
+
+    private var statusView: some View {
+        Text(statusText)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: 20)
+            .padding(.top, 2)
     }
 
     private var bottomControls: some View {
@@ -348,6 +394,12 @@ struct ContentView: View {
             return nil
         }
         return UIImage(contentsOfFile: url.path)
+    }
+
+    private func logLayoutIfNeeded(_ metrics: PageLayoutMetrics) {
+        guard lastLoggedLayoutKey != metrics.logKey else { return }
+        lastLoggedLayoutKey = metrics.logKey
+        AppLogger.info("Using \(metrics.deviceName) layout \(metrics.logKey)")
     }
 
     private func changePage(_ direction: Int) {
@@ -475,6 +527,110 @@ struct ContentView: View {
                 manualPagePlayback: wasPlaying && manualPagePlayback
             )
         )
+    }
+}
+
+private struct PageLayoutMetrics: Equatable {
+    let size: CGSize
+    let isPad: Bool
+
+    init(size: CGSize, isPad: Bool) {
+        self.size = size
+        self.isPad = isPad
+    }
+
+    var usesWideLayout: Bool {
+        isPad && size.width >= 760 && size.width > size.height
+    }
+
+    var deviceName: String {
+        isPad ? "iPad" : "iPhone"
+    }
+
+    var maxContentWidth: CGFloat {
+        if usesWideLayout {
+            return min(size.width - horizontalPadding * 2, 1180)
+        }
+        return isPad ? min(size.width - horizontalPadding * 2, 760) : .infinity
+    }
+
+    var horizontalPadding: CGFloat {
+        if isPad {
+            return max(28, min(size.width * 0.045, 56))
+        }
+        return 20
+    }
+
+    var topPadding: CGFloat {
+        isPad ? 18 : 8
+    }
+
+    var bottomPadding: CGFloat {
+        isPad ? 34 : 24
+    }
+
+    var sectionSpacing: CGFloat {
+        isPad ? 18 : 12
+    }
+
+    var cardPadding: CGFloat {
+        isPad ? 24 : 18
+    }
+
+    var contentMinHeight: CGFloat {
+        max(0, size.height - topPadding - bottomPadding)
+    }
+
+    var illustrationHeight: CGFloat {
+        if usesWideLayout {
+            return max(420, contentMinHeight)
+        }
+
+        let reservedTextHeight: CGFloat = isPad ? 358 : 320
+        let dynamicHeight = contentMinHeight - reservedTextHeight
+        let minimumHeight: CGFloat = isPad ? 360 : 194
+        let maximumHeight = isPad ? min(620, size.height * 0.54) : min(330, size.height * 0.42)
+        return min(max(dynamicHeight, minimumHeight), maximumHeight)
+    }
+
+    var textColumnWidth: CGFloat {
+        maxContentWidth * 0.38
+    }
+
+    var imageColumnWidth: CGFloat {
+        maxContentWidth - textColumnWidth - sectionSpacing
+    }
+
+    var verseFontSize: CGFloat {
+        isPad ? 44 : 34
+    }
+
+    var captionFont: Font {
+        isPad ? .headline : .subheadline
+    }
+
+    var pinyinFont: Font {
+        isPad ? .title3 : .callout
+    }
+
+    var headlineFont: Font {
+        isPad ? .title3 : .headline
+    }
+
+    var storyFont: Font {
+        isPad ? .title3 : .body
+    }
+
+    var moralFont: Font {
+        isPad ? .headline : .callout
+    }
+
+    var lineSpacing: CGFloat {
+        isPad ? 5 : 3
+    }
+
+    var logKey: String {
+        "\(deviceName)-\(usesWideLayout ? "wide" : "compact")-\(Int(size.width))x\(Int(size.height))"
     }
 }
 
