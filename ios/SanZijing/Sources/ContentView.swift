@@ -167,8 +167,7 @@ struct ContentView: View {
         VStack(spacing: metrics.sectionSpacing) {
             verseCard(metrics: metrics)
                 .frame(width: metrics.compactSectionWidth)
-            illustrationView(metrics: metrics)
-                .frame(width: metrics.compactSectionWidth)
+            illustrationView(metrics: metrics, width: metrics.compactSectionWidth)
             storySection(metrics: metrics)
                 .frame(width: metrics.compactSectionWidth)
             statusView
@@ -186,8 +185,7 @@ struct ContentView: View {
             }
             .frame(width: metrics.textColumnWidth)
 
-            illustrationView(metrics: metrics)
-                .frame(width: metrics.imageColumnWidth)
+            illustrationView(metrics: metrics, width: metrics.imageColumnWidth)
         }
         .frame(minHeight: metrics.contentMinHeight, alignment: .center)
     }
@@ -225,7 +223,7 @@ struct ContentView: View {
         )
     }
 
-    private func illustrationView(metrics: PageLayoutMetrics) -> some View {
+    private func illustrationView(metrics: PageLayoutMetrics, width: CGFloat) -> some View {
         Group {
             if let image = pageImage(currentPage.number) {
                 Image(uiImage: image)
@@ -241,8 +239,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
         }
-        .frame(height: metrics.illustrationHeight)
-        .frame(maxWidth: .infinity)
+        .frame(width: width, height: metrics.illustrationHeight)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -323,7 +320,7 @@ struct ContentView: View {
     }
 
     private var chromeHorizontalPadding: CGFloat {
-        UIDevice.current.userInterfaceIdiom == .pad ? 56 : 20
+        UIDevice.current.userInterfaceIdiom == .pad ? 28 : 20
     }
 
     private var pageNavigationControl: some View {
@@ -565,7 +562,7 @@ private struct PageLayoutMetrics: Equatable {
 
     var horizontalPadding: CGFloat {
         if isPad {
-            return max(44, min(size.width * 0.07, 84))
+            return max(22, min(size.width * 0.035, 42))
         }
         return 20
     }
@@ -612,7 +609,7 @@ private struct PageLayoutMetrics: Equatable {
 
     var compactSectionWidth: CGFloat {
         if isPad && !usesWideLayout {
-            return max(0, contentWidth - 88)
+            return max(0, contentWidth - 44)
         }
         return contentWidth
     }
