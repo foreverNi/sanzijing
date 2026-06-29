@@ -110,7 +110,7 @@ struct ContentView: View {
             .accessibilityLabel("设置")
             .disabled(locked || recordingService.isRecording)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, chromeHorizontalPadding)
         .padding(.top, 12)
         .padding(.bottom, 10)
         .background(Color(.systemGroupedBackground))
@@ -135,9 +135,9 @@ struct ContentView: View {
                         compactPageLayout(metrics: metrics)
                     }
                 }
-                .frame(maxWidth: metrics.maxContentWidth)
-                .frame(maxWidth: .infinity)
+                .frame(width: metrics.contentWidth)
                 .padding(.horizontal, metrics.horizontalPadding)
+                .frame(width: proxy.size.width, alignment: .center)
                 .padding(.top, metrics.topPadding)
                 .padding(.bottom, metrics.bottomPadding)
             }
@@ -166,9 +166,13 @@ struct ContentView: View {
     private func compactPageLayout(metrics: PageLayoutMetrics) -> some View {
         VStack(spacing: metrics.sectionSpacing) {
             verseCard(metrics: metrics)
+                .frame(width: metrics.compactSectionWidth)
             illustrationView(metrics: metrics)
+                .frame(width: metrics.compactSectionWidth)
             storySection(metrics: metrics)
+                .frame(width: metrics.compactSectionWidth)
             statusView
+                .frame(width: metrics.compactSectionWidth)
         }
         .frame(minHeight: metrics.contentMinHeight, alignment: .top)
     }
@@ -312,10 +316,14 @@ struct ContentView: View {
                 .disabled(recordingService.isRecording || locked)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, chromeHorizontalPadding)
         .padding(.top, 10)
         .padding(.bottom, 8)
         .background(.regularMaterial)
+    }
+
+    private var chromeHorizontalPadding: CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 56 : 20
     }
 
     private var pageNavigationControl: some View {
@@ -547,16 +555,17 @@ private struct PageLayoutMetrics: Equatable {
         isPad ? "iPad" : "iPhone"
     }
 
-    var maxContentWidth: CGFloat {
+    var contentWidth: CGFloat {
+        let availableWidth = max(0, size.width - horizontalPadding * 2)
         if usesWideLayout {
-            return min(size.width - horizontalPadding * 2, 1180)
+            return min(availableWidth, 1080)
         }
-        return isPad ? min(size.width - horizontalPadding * 2, 760) : .infinity
+        return isPad ? min(availableWidth, 760) : availableWidth
     }
 
     var horizontalPadding: CGFloat {
         if isPad {
-            return max(28, min(size.width * 0.045, 56))
+            return max(44, min(size.width * 0.07, 84))
         }
         return 20
     }
@@ -594,11 +603,18 @@ private struct PageLayoutMetrics: Equatable {
     }
 
     var textColumnWidth: CGFloat {
-        maxContentWidth * 0.38
+        contentWidth * 0.38
     }
 
     var imageColumnWidth: CGFloat {
-        maxContentWidth - textColumnWidth - sectionSpacing
+        contentWidth - textColumnWidth - sectionSpacing
+    }
+
+    var compactSectionWidth: CGFloat {
+        if isPad && !usesWideLayout {
+            return max(0, contentWidth - 88)
+        }
+        return contentWidth
     }
 
     var verseFontSize: CGFloat {
