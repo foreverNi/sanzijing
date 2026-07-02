@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showRecordingManager = false
     @State private var pendingAutoTask: Task<Void, Never>?
     @State private var lastLoggedLayoutKey = ""
+    @State private var lockPressing = false
 
     private let pages = ContentRepository.pages
 
@@ -360,29 +361,58 @@ struct ContentView: View {
 
     private var lockOverlay: some View {
         ZStack {
-            Color.black.opacity(0.35)
+            Color(argbHex: currentPage.backgroundColor)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                Text("自动播放已锁定")
-                    .font(.title3.bold())
-                Text("长按下方按钮停止自动播放")
-                    .font(.subheadline)
+            if let image = pageImage(currentPage.number) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea()
+            } else {
+                Image(systemName: "photo")
+                    .font(.system(size: 72, weight: .regular))
                     .foregroundStyle(.secondary)
-                Button("长按停止") {}
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .simultaneousGesture(
-                        LongPressGesture(minimumDuration: 0.9)
-                            .onEnded { _ in
-                                stopAutoMode()
-                            }
-                    )
             }
-            .padding(24)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .padding(28)
+
+            VStack {
+                Spacer()
+                lockedAutoExitControl
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.bottom, 24)
+            .ignoresSafeArea(edges: .top)
         }
+    }
+
+    private var lockedAutoExitControl: some View {
+        Image(systemName: "lock.fill")
+            .font(.system(size: 27, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: 70, height: 70)
+            .background(.black.opacity(0.56), in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(.white.opacity(lockPressing ? 0.9 : 0.24), lineWidth: lockPressing ? 3 : 1)
+            )
+            .scaleEffect(lockPressing ? 0.92 : 1)
+            .shadow(color: .black.opacity(0.22), radius: 12, y: 6)
+            .contentShape(Circle())
+            .onLongPressGesture(
+                minimumDuration: 0.9,
+                maximumDistance: 44,
+                pressing: { pressing in
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        lockPressing = pressing
+                    }
+                },
+                perform: {
+                    stopAutoMode()
+                }
+            )
+            .accessibilityLabel("自动播放已锁定")
+            .accessibilityHint("长按退出自动播放")
     }
 
     private var statusText: String {
