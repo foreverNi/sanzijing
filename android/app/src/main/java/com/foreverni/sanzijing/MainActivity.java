@@ -11,6 +11,7 @@ import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -30,6 +31,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -102,7 +104,8 @@ public final class MainActivity extends Activity {
     private TextView storyText;
     private TextView moralText;
     private TextView statusText;
-    private TextView lockHint;
+    private ImageView lockImageView;
+    private TextView lockButton;
     private Button playButton;
     private Button autoButton;
     private Button recordButton;
@@ -315,25 +318,33 @@ public final class MainActivity extends Activity {
 
     private void buildLockOverlay() {
         FrameLayout overlay = new FrameLayout(this);
-        overlay.setPadding(dp(18), dp(18), dp(18), dp(28));
-        overlay.setBackgroundColor(Color.TRANSPARENT);
+        overlay.setBackgroundColor(page().backgroundColor);
+        overlay.setClickable(true);
+        overlay.setOnTouchListener((v, event) -> true);
         overlay.setVisibility(View.GONE);
 
-        lockHint = label("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁", tokens.textCaption, Color.WHITE, Typeface.BOLD);
-        lockHint.setGravity(Gravity.CENTER);
-        lockHint.setPadding(dp(14), dp(10), dp(14), dp(10));
-        lockHint.setBackground(rounded(Color.argb(226, 31, 43, 35), Color.TRANSPARENT, tokens.buttonRadius, 0));
-        FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(
+        lockImageView = new ImageView(this);
+        lockImageView.setAdjustViewBounds(true);
+        lockImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        lockImageView.setContentDescription("自动播放当前页图片");
+        overlay.addView(lockImageView, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+
+        lockButton = label("🔒", 26, Color.WHITE, Typeface.BOLD);
+        lockButton.setGravity(Gravity.CENTER);
+        lockButton.setBackground(rounded(Color.argb(154, 0, 0, 0), Color.argb(74, 255, 255, 255), 35, 1));
+        lockButton.setContentDescription("自动播放已锁定，长按退出自动播放");
+        FrameLayout.LayoutParams lockParams = new FrameLayout.LayoutParams(
+            dp(70),
+            dp(70),
             Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
         );
-        overlay.addView(lockHint, hintParams);
+        lockParams.setMargins(0, 0, 0, dp(24));
+        overlay.addView(lockButton, lockParams);
 
-        overlay.setOnTouchListener((v, event) -> {
-            handleUnlockTouch(v, event);
-            return true;
-        });
+        lockButton.setOnTouchListener((v, event) -> handleLockButtonTouch(event));
         lockOverlay = overlay;
         root.addView(lockOverlay, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
@@ -353,6 +364,7 @@ public final class MainActivity extends Activity {
         storyText.setText(page.story);
         moralText.setText("小小启示：" + page.moral);
         sceneView.setPage(page, currentPageIndex + 1);
+        updateLockOverlayPage();
         updateRecordingControls();
         if (!autoMode) {
             statusText.setText("");
@@ -1350,59 +1362,53 @@ public final class MainActivity extends Activity {
 
     private void setLocked(boolean shouldLock) {
         locked = shouldLock;
+        updateLockOverlayPage();
         if (lockOverlay != null) {
             lockOverlay.setVisibility(locked ? View.VISIBLE : View.GONE);
         }
         updateRecordingControls();
     }
 
-    private void handleUnlockTouch(View view, MotionEvent event) {
-        if (!locked) {
+    private void updateLockOverlayPage() {
+        if (lockOverlay != null) {
+            lockOverlay.setBackgroundColor(page().backgroundColor);
+        }
+        if (lockImageView == null) {
             return;
         }
-        if (event.getActionMasked() == MotionEvent.ACTION_UP
-            || event.getActionMasked() == MotionEvent.ACTION_CANCEL
-            || event.getPointerCount() < 3) {
-            cancelUnlock();
-            lockHint.setText("自动播放已锁定  ·  三指按住左上、右上、下方中央解锁");
-            return;
+        String path = "illustrations/page_" + String.format(Locale.US, "%03d", currentPageIndex + 1) + ".png";
+        try (InputStream stream = getAssets().open(path)) {
+            lockImageView.setImageDrawable(Drawable.createFromStream(stream, path));
+        } catch (IOException ignored) {
+            lockImageView.setImageDrawable(null);
         }
+    }
 
-        if (touchesUnlockZones(view, event)) {
-            lockHint.setText("保持三指按住...");
+    private boolean handleLockButtonTouch(MotionEvent event) {
+        if (!locked) {
+            return true;
+        }
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            lockButton.animate().scaleX(0.92f).scaleY(0.92f).setDuration(120).start();
             if (pendingUnlockRunnable == null) {
                 pendingUnlockRunnable = () -> {
                     if (locked) {
                         stopAutoMode();
-                        Toast.makeText(this, "已解锁并停止自动播放", Toast.LENGTH_SHORT).show();
                     }
                 };
                 handler.postDelayed(pendingUnlockRunnable, UNLOCK_HOLD_MS);
             }
-        } else {
-            cancelUnlock();
-            lockHint.setText("位置不正确  ·  请同时按住左上、右上、下方中央");
+            return true;
         }
-    }
-
-    private boolean touchesUnlockZones(View view, MotionEvent event) {
-        boolean leftTop = false;
-        boolean rightTop = false;
-        boolean bottomCenter = false;
-        int width = Math.max(view.getWidth(), 1);
-        int height = Math.max(view.getHeight(), 1);
-        for (int i = 0; i < event.getPointerCount(); i++) {
-            float x = event.getX(i) / width;
-            float y = event.getY(i) / height;
-            if (x < 0.38f && y < 0.42f) {
-                leftTop = true;
-            } else if (x > 0.62f && y < 0.42f) {
-                rightTop = true;
-            } else if (x > 0.32f && x < 0.68f && y > 0.58f) {
-                bottomCenter = true;
+        if (event.getActionMasked() == MotionEvent.ACTION_UP
+            || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+            if (lockButton != null) {
+                lockButton.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
             }
+            cancelUnlock();
+            return true;
         }
-        return leftTop && rightTop && bottomCenter;
+        return true;
     }
 
     private void cancelUnlock() {
